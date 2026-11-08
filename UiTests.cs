@@ -5,6 +5,14 @@ namespace Homelab.Vault;
 
 internal static class UiTests
 {
+    public static void RenderRemote(string path, string language)
+    {
+        UiText.PreviewLanguage = language;
+        using var form = new Remote.RemoteClientForm(preview: true) { Opacity = 0, ShowInTaskbar = false };
+        using var timer = new System.Windows.Forms.Timer { Interval = 300 };
+        timer.Tick += (_, _) => { timer.Stop(); using var bitmap = new Bitmap(form.Width, form.Height); form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size)); bitmap.Save(path); form.Close(); };
+        form.Shown += (_, _) => timer.Start(); Application.Run(form);
+    }
     public static void RenderPreferences(string path, string language)
     {
         UiText.PreviewLanguage = language;

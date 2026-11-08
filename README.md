@@ -1,5 +1,23 @@
 # VaultAgent
 
+## Preversion 3 : serveur Linux et client Windows
+
+**[Telecharger la preversion 3.0.0-preview.1](https://github.com/MonsieurZed/VaultAgent/releases/tag/v3.0.0-preview.1)**
+
+- Serveur Linux : moteur persistant, interface web FR/EN/ES, session a delai glissant et clients revocables.
+- Windows : installateur utilisateur, bouclier en arriere-plan et demarrage automatique ; le coffre reste sur Linux.
+- Linux : client autonome avec Node inclus. Un ZIP portable Windows est aussi propose.
+
+L'installateur ouvre des champs vides avec des exemples. Associer chaque appareil avec un code unique
+cree sur le serveur ; aucun mot de passe maitre n'est saisi dans le client. Les clients remplissent
+identifiants et TOTP sans renvoyer leurs valeurs au modele dans l'usage normal. Un agent qui controle
+le navigateur ou execute du code arbitraire peut encore lire les champs : il ne s'agit pas d'une isolation.
+Les passkeys Windows experimentales ne sont pas portees sur Linux dans cette preversion.
+
+Guides : [serveur Linux](linux/README.md), [clients](remote-client/README.md).
+La version stable 2.0.1 reste disponible pour le mode Windows autonome.
+
+
 Service Windows pour Bitwarden et Vaultwarden : bouclier violet, moteur CLI persistant,
 déverrouillage UAC ou Windows Hello et remplissage sans presse-papiers pour les agents.
 

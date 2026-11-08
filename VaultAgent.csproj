@@ -15,6 +15,8 @@
     <EmbeddedResource Include="Localization/translations.json" LogicalName="VaultAgent.Translations.json" />
     <Compile Remove="installer\**\*.cs" />
     <Compile Remove="provider\**\*.cs" />
+    <Compile Remove="client\**\*.cs" />
+    <Compile Remove="client-setup\**\*.cs" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
     <PackageReference Include="System.Formats.Cbor" Version="10.0.0" />

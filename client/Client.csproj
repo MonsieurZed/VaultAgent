@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType><TargetFramework>net9.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <AssemblyName>VaultAgent-Client</AssemblyName><RootNamespace>Homelab.Vault</RootNamespace><Version>3.0.0-preview.1</Version><RollForward>LatestMajor</RollForward>
+    <ApplicationManifest>client.manifest</ApplicationManifest><ApplicationIcon>../assets/shield.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Remote/*.cs" Link="Remote/%(Filename)%(Extension)" />
+    <Compile Include="../ShieldIcon.cs" Link="ShieldIcon.cs" />
+    <Compile Include="../DirectInput.cs" Link="DirectInput.cs" />
+    <Compile Include="../UiText.cs" Link="UiText.cs" />
+    <Compile Include="../UserPreferences.cs" Link="UserPreferences.cs" />
+    <EmbeddedResource Include="../Localization/translations.json" LogicalName="VaultAgent.Translations.json" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
+  </ItemGroup>
+</Project>

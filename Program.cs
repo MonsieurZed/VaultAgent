@@ -9,6 +9,7 @@ internal static class Program
     private static int Main(string[] args)
     {
         try {
+            if (args.Length > 0 && args[0] == "--remote") return Remote.RemoteCommands.Run(args.Length == 1 ? new[] { "settings" } : args[1..]);
             if (args.Length == 2 && args[0] == "--check-updates") { Print(AppPaths.Element(UpdateService.CheckAsync(args[1], CancellationToken.None).GetAwaiter().GetResult() is {} release ? new { release.Tag, version = release.Version.ToString(3), release.Experimental } : new { Tag = "", version = "", Experimental = false })); return 0; }
             if (args.Contains("--passkeys-status")) { Print(AppPaths.Element(Passkeys.WindowsPasskeyApi.Status())); return 0; }
             if (args.Contains("--service")) { ServiceBase.Run(new BrokerService()); return 0; }
@@ -30,6 +31,7 @@ internal static class Program
             if (args.Length is >= 2 and <= 4 && args[0] == "--render-ui") { UiText.PreviewLanguage = args.Length >= 3 ? args[2] : "fr"; UiTests.Render(args[1], args.Length == 4 ? int.Parse(args[3]) : 0); return 0; }
             if (args.Contains("--application-settings")) { Application.Run(new ApplicationSettingsForm()); return 0; }
             if (args.Length == 3 && args[0] == "--render-preferences") { UiTests.RenderPreferences(args[1], args[2]); return 0; }
+            if (args.Length == 3 && args[0] == "--render-remote") { UiTests.RenderRemote(args[1], args[2]); return 0; }
             if (args.Length == 2 && args[0] == "--render-passkeys-ui") { UiTests.RenderPasskeys(args[1]); return 0; }
             if (args.Length == 2 && args[0] == "--input-test") { UiTests.Input(args[1]); return 0; }
             var ownerIndex = Array.IndexOf(args, "--owner");
@@ -45,6 +47,7 @@ internal static class Program
             return 0;
         }
         catch (Exception error) {
+            if (args.Length > 0 && args[0] == "--remote") { Console.Error.WriteLine(error is FileNotFoundException or DirectoryNotFoundException ? "Client distant non associe. Ouvrir VaultAgent-Client.exe et saisir un code d association." : "Client distant : operation refusee, connexion absente ou coffre verrouille."); return 1; }
             if (args.Length > 0 && args[0].StartsWith("--render-", StringComparison.Ordinal)) { Console.Error.WriteLine(error.ToString()); return 1; }
             if (args.Contains("--service")) return 1;
             if (args.Contains("--self-test") || args.Contains("--engine-smoke")) { Console.Error.WriteLine(error.Message); return 1; }

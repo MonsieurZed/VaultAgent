@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType><TargetFramework>net9.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><AssemblyName>VaultAgent-Client-Setup</AssemblyName>
+    <RootNamespace>Homelab.Vault.ClientSetup</RootNamespace><Version>3.0.0-preview.1</Version>
+    <ApplicationManifest>../client/client.manifest</ApplicationManifest><ApplicationIcon>../assets/shield.ico</ApplicationIcon>
+    <PublishSingleFile>true</PublishSingleFile><IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile><EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../ShieldIcon.cs" Link="ShieldIcon.cs" />
+    <EmbeddedResource Include="../dist/client-payload.zip" LogicalName="Client.Payload.zip" />
+  </ItemGroup>
+</Project>

@@ -10,6 +10,10 @@ installer/bin/
 installer/obj/
 provider/bin/
 provider/obj/
+client/bin/
+client/obj/
+client-setup/bin/
+client-setup/obj/
 *.log
 install-diagnostic.json
 *.tmp
