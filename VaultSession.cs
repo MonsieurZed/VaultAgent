@@ -18,7 +18,7 @@ internal sealed partial class VaultSession(string sid, AccountStore store) : IDi
     public bool IsUnlocked => lease.IsValid && engine?.IsAlive == true;
     public object Status() => new { configured = settings != null, unlocked = IsUnlocked, expiresUtc = IsUnlocked ? lease.ExpiresUtc : null,
         timeoutMinutes = settings?.TimeoutMinutes, mode = settings?.Mode ?? "uac", email = settings?.Email, server = settings?.Server,
-        enginePersistent = true, version = "2.1.0" };
+        enginePersistent = true, version = typeof(VaultSession).Assembly.GetName().Version!.ToString(3) };
     public object PublicSettings() => settings?.Public() ?? new { configured = false };
     public void ExpireIfNeeded() { if (lease.Authorized && (!lease.IsValid || engine?.IsAlive != true)) Lock(); }
     private int Reset()
