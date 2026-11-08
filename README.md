@@ -5,6 +5,8 @@ déverrouillage UAC ou Windows Hello et remplissage sans presse-papiers pour les
 
 ## Installer
 
+**[Télécharger l'installateur Windows x64](https://github.com/MonsieurZed/VaultAgent/releases/latest)**
+
 Lancer `VaultAgent-Setup-2.0.1-x64.exe`, puis **Installer** et valider l'UAC avec le même compte Windows.
 L'EXE contient l'application, Node et le runtime .NET : aucun SDK ni PowerShell 7 à installer.
 Il embarque .NET Desktop 10.0.14 et propose les raccourcis bureau/démarrage et une entrée **VaultAgent**
