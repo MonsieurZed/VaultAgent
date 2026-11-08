@@ -16,7 +16,7 @@ export function originOf(text) { try { const url = new URL(text); return url.pro
 export class Session {
   constructor(store, factory, clock = () => performance.now()) { this.store = store; this.factory = factory; this.clock = clock; this.generation = 0; this.tail = Promise.resolve(); }
   serial(action) { const result = this.tail.then(action); this.tail = result.catch(() => {}); return result; }
-  status() { this.expire(); return { version: '3.0.0-preview.4', configured: !!this.store.account, unlocked: !!this.engine, timeoutMinutes: this.store.account?.timeoutMinutes ?? null, expiresUtc: this.engine && this.deadline !== null ? new Date(Date.now() + Math.max(0, this.deadline - this.clock())).toISOString() : null }; }
+  status() { this.expire(); return { version: '3.0.0-preview.5', configured: !!this.store.account, unlocked: !!this.engine, timeoutMinutes: this.store.account?.timeoutMinutes ?? null, expiresUtc: this.engine && this.deadline !== null ? new Date(Date.now() + Math.max(0, this.deadline - this.clock())).toISOString() : null }; }
   touch() { this.deadline = this.store.account.timeoutMinutes === null ? null : this.clock() + this.store.account.timeoutMinutes * 60000; }
   lock() { ++this.generation; this.engine?.kill(); this.engine = null; this.deadline = null; }
   expire() { if (this.engine && (this.engine.alive === false || this.deadline !== null && this.clock() >= this.deadline)) this.lock(); }

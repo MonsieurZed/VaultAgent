@@ -35,10 +35,12 @@ export function createApp({ session: legacySession, devices: legacyDevices, vaul
         const context = vaults ? vaults.select(request.headers.authorization, data.vaultId) : get(data.vaultId);
         const { session, devices, approvals } = context;
         const authorized = () => devices.authenticate(request.headers.authorization); authorized();
-        if (path === '/api/agent/status') send(response, 200, { vaultId: context.id, vaultName: context.name, ...session.status(), unlockRequest: approvals.current(authorized()), approvalRequests: devices.record(authorized())?.approverPublicKey ? approvals.list().map(entry => ({ ...entry, vaultName: context.name })) : [] });
+        if (path === '/api/agent/status') { const security = await approvals.security(authorized()); send(response, 200, { vaultId: context.id, vaultName: context.name, ...session.status(), approvalSecurity: security, unlockRequest: approvals.current(authorized()), approvalRequests: security.registered ? approvals.list().map(entry => ({ ...entry, vaultName: context.name, helloRequired: security.helloRequired, helloCredential: devices.record(authorized())?.helloCredential ?? null })) : [] }); }
         else if (path === '/api/agent/request-unlock') send(response, 200, await approvals.request(authorized()));
         else if (path === '/api/agent/decide-unlock') send(response, 200, await approvals.signedDecision(authorized(), data, origin));
         else if (path === '/api/agent/approval-context') send(response, 200, approvals.context(authorized()));
+        else if (path === '/api/agent/hello-begin') send(response, 200, await approvals.beginHello(authorized()));
+        else if (path === '/api/agent/hello-enroll') send(response, 200, await approvals.enrollHello(authorized(), data, origin));
         else if (path === '/api/agent/catalog') send(response, 200, await session.catalog(data.search, authorized));
         else if (path === '/api/agent/seal') send(response, 200, await session.secret(data, authorized));
         else if (path === '/api/agent/write-preview') send(response, 200, await session.writePreview(data, authorized));
@@ -49,7 +51,7 @@ export function createApp({ session: legacySession, devices: legacyDevices, vaul
         else throw new Error('route-refused'); return;
       }
       if (!owner || request.headers['x-authentik-username'] !== owner) throw new Error('owner-required');
-      const download = { '/downloads/windows-client.zip': 'VaultAgent-Windows-Client-3.0.0-preview.4-x64.zip', '/downloads/linux-client.tar.gz': 'VaultAgent-Linux-Client-3.0.0-preview.4.tar.gz', '/downloads/windows-client.zip.sha256': 'VaultAgent-Windows-Client-3.0.0-preview.4-x64.zip.sha256', '/downloads/linux-client.tar.gz.sha256': 'VaultAgent-Linux-Client-3.0.0-preview.4.tar.gz.sha256' }[path];
+      const download = { '/downloads/windows-client.zip': 'VaultAgent-Windows-Client-3.0.0-preview.5-x64.zip', '/downloads/linux-client.tar.gz': 'VaultAgent-Linux-Client-3.0.0-preview.5.tar.gz', '/downloads/windows-client.zip.sha256': 'VaultAgent-Windows-Client-3.0.0-preview.5-x64.zip.sha256', '/downloads/linux-client.tar.gz.sha256': 'VaultAgent-Linux-Client-3.0.0-preview.5.tar.gz.sha256' }[path];
       if (request.method === 'GET' && download && downloadsDirectory) {
         const stream = createReadStream(join(downloadsDirectory, download));
         response.once('close', () => stream.destroy());

@@ -16,6 +16,7 @@ internal sealed class RemoteTray : ApplicationContext
         var menu = new ContextMenuStrip(); menu.Items.Add(state);
         var portal = menu.Items.Add(UiText.T("Ouvrir le serveur VaultAgent")); portal.Click += (_, _) => { if (string.IsNullOrEmpty(RemoteConnection.ConfiguredServer)) Configure(); else Process.Start(new ProcessStartInfo(Server) { UseShellExecute = true }); };
         var settings = menu.Items.Add(UiText.T("Associer ce client")); settings.Click += (_, _) => Configure();
+        var hello = menu.Items.Add(UiText.T("Activer Windows Hello")); hello.Click += (_, _) => { using var form = new RemoteHelloForm(); form.ShowDialog(); };
         var lockItem = menu.Items.Add(UiText.T("Verrouiller maintenant")); lockItem.Click += async (_, _) => { try { await ForVaults(id => RemoteConnection.CallAsync("lock", new { }, id)); await Refresh(); } catch { state.Text = UiText.T("Service du coffre indisponible"); } };
         menu.Items.Add(new ToolStripSeparator()); var exit = menu.Items.Add(UiText.T("Quitter")); exit.Click += (_, _) => ExitThread();
         icon.ContextMenuStrip = menu; icon.DoubleClick += (_, _) => Configure();

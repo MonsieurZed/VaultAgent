@@ -11,5 +11,5 @@ const store = await new Store(process.env.VAULTAGENT_DATA || '/data').init();
 const vaults = await new Vaults(store, () => { throw new Error('engine-not-required'); }).init();
 const allowed = [...vaults.contexts.values()].filter(context => context.devices.record(deviceId));
 if (!allowed.length) throw new Error('device-missing');
-for (const context of allowed) await context.store.updateDevices(current => current.map(device => device.id === deviceId && device.profile === context.store.account.profile ? { ...device, approverPublicKey: publicKey } : device));
+for (const context of allowed) await context.store.updateDevices(current => current.map(device => device.id === deviceId && device.profile === context.store.account.profile ? { ...device, approverPublicKey: publicKey, helloEnrollmentAllowed: true } : device));
 console.log(JSON.stringify({ registered: true, deviceId }));

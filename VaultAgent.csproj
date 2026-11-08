@@ -17,6 +17,8 @@
     <Compile Remove="provider\**\*.cs" />
     <Compile Remove="client\**\*.cs" />
     <Compile Remove="client-setup\**\*.cs" />
+    <!-- Les copies de distribution ne font pas partie des sources natives. -->
+    <Compile Remove="dist\**\*.cs;publish\**\*.cs" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
     <PackageReference Include="System.Formats.Cbor" Version="10.0.0" />

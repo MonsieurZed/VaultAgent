@@ -51,7 +51,7 @@ internal static partial class RemoteConnection
         } finally { CryptographicOperations.ZeroMemory(token); }
     }
     public static async Task<JsonElement> CallAsync(string operation, object payload, string? vaultId = null) {
-        if (operation is not ("vaults" or "sharing" or "share" or "status" or "catalog" or "seal" or "lock" or "write" or "write-preview" or "request-unlock" or "decide-unlock" or "approval-context")) throw new ArgumentException("Operation distante refusee.");
+        if (operation is not ("vaults" or "sharing" or "share" or "status" or "catalog" or "seal" or "lock" or "write" or "write-preview" or "request-unlock" or "decide-unlock" or "approval-context" or "hello-begin" or "hello-enroll")) throw new ArgumentException("Operation distante refusee.");
         var body = System.Text.Json.JsonSerializer.SerializeToNode(payload, AppPaths.Json) as System.Text.Json.Nodes.JsonObject ?? throw new ArgumentException("Requete invalide.");
         var target = vaultId ?? TargetVault;
         if (target is not null) {

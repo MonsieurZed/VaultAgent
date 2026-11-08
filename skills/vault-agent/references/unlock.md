@@ -1,5 +1,13 @@
 # Demander le déverrouillage — serveur/client 3.0.0-preview.3 ou ultérieur
 
+Depuis preview.5, Zed peut activer Windows Hello depuis le bouclier du client distant.
+Un accord manuel sur un coffre activé exige alors une preuve Hello vérifiée par Linux.
+L'agent demande et attend ; il ne configure pas Hello, n'enrôle pas de clé et ne manipule
+jamais le PIN ou la boîte de dialogue Windows. Respecter annulation et indisponibilité.
+`hello-status` vérifie seulement la disponibilité. `hello-setup` est réservé à une demande
+explicite de configuration par l'utilisateur. Les clients déjà autorisés automatiquement
+restent automatiques. La présence du menu ne prouve pas que Hello est activé sur le PC.
+
 Importer le helper du client installé, sans lire son fichier d'association :
 
 ```javascript
@@ -14,7 +22,7 @@ Le PC Windows approbateur affiche une petite notification Oui/Non et une case To
 La politique Toujours accepter est conservée par client sur Linux ; si Zed l'a activée, le serveur
 ouvre le coffre à la demande sans dépendre de Windows. L'agent ne doit ni activer cette politique,
 ni enregistrer un nouveau PC approbateur de sa propre initiative. Zed peut la désactiver dans
-Clients ou par le menu du bouclier. Aucune validation UAC/Hello distante n'est fournie.
+Clients ou par le menu du bouclier. Avant preview.5, la confirmation distante ne fournit pas Hello.
 
 L'agent **ne doit pas approuver sa propre demande**, appeler les routes administrateur,
 cliquer sur Oui/Autoriser les clients/Autoriser cette demande ni piloter la session web de Zed

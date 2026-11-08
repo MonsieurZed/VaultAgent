@@ -10,6 +10,21 @@ export class Devices {
     await this.store.updateDevices(current => current.map(value => value.id === id && value.profile === this.store.account?.profile ? { ...value, autoUnlock: enabled } : value));
   }
   async clearAutomatic() { await this.store.updateDevices(current => current.map(value => ({ ...value, autoUnlock: false }))); }
+  async authorizeHelloEnrollment(id) {
+    const profile = this.store.account?.profile;
+    await this.store.updateDevices(current => {
+      if (this.store.account?.profile !== profile || !current.some(value => value.id === id && value.profile === profile && value.approverPublicKey)) throw new Error('hello-enrollment-refused');
+      return current.map(value => value.id === id && value.profile === profile ? { ...value, helloEnrollmentAllowed: true } : value);
+    });
+  }
+  async enrollHello(id, credential) {
+    const profile = this.store.account?.profile;
+    await this.store.updateDevices(current => {
+      const device = current.find(value => value.id === id && value.profile === profile);
+      if (this.store.account?.profile !== profile || !device?.approverPublicKey || device.helloCredential) throw new Error('hello-enrollment-refused');
+      return current.map(value => value === device ? { ...value, helloEnrollmentAllowed: false, helloCredential: { id: credential.id, keyType: credential.keyType, first: credential.first, second: credential.second } } : value);
+    });
+  }
   issue(name) {
     if (typeof name !== 'string' || !name.trim() || name.length > 80) throw new Error('invalid-device');
     for (const [id, entry] of this.pairings) if (entry.expires < this.clock()) this.pairings.delete(id);

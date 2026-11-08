@@ -11,9 +11,10 @@ import { Store } from '../store.mjs';
 import { Devices } from '../devices.mjs';
 
 function fixture() {
+  const disk = new Map();
   let now = 0; let opened = false; let unlocks = 0;
   const records = [{ id: 'device-a', name: 'PC factice' }, { id: 'device-b', name: 'Autre PC' }];
-  const session = { generation: 0, store: { account: { profile: 'test', timeoutMinutes: 15 } },
+  const session = { generation: 0, store: { account: { profile: 'test', timeoutMinutes: 15 }, async load(name, fallback) { return disk.get(name) ?? fallback; }, async save(name, value) { disk.set(name, structuredClone(value)); } },
     status: () => ({ configured: true, unlocked: opened }),
     async unlock() { ++unlocks; opened = true; }, lock() { opened = false; ++this.generation; } };
   const devices = { list: () => records, record: id => records.find(r => r.id === id), async setAutomatic(id, enabled) { records.find(r => r.id === id).autoUnlock = enabled; }, async clearAutomatic() { for (const row of records) row.autoUnlock = false; }, authenticate(header) { const id = header?.replace('Bearer ', ''); if (!records.some(r => r.id === id)) throw new Error('unauthorized'); return id; } };

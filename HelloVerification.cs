@@ -9,13 +9,13 @@ namespace Homelab.Vault;
 internal static class HelloVerification
 {
     public static string Base64Url(byte[] data) => Convert.ToBase64String(data).TrimEnd('=').Replace('+', '-').Replace('/', '_');
-    private static void CheckAuthenticator(byte[] data) {
-        if (data.Length < 37 || !CryptographicOperations.FixedTimeEquals(data.AsSpan(0, 32), SHA256.HashData(Encoding.UTF8.GetBytes(AppPaths.RpId))) || (data[32] & 5) != 5)
+    private static void CheckAuthenticator(byte[] data, string? rpId = null) {
+        if (data.Length < 37 || !CryptographicOperations.FixedTimeEquals(data.AsSpan(0, 32), SHA256.HashData(Encoding.UTF8.GetBytes(rpId ?? AppPaths.RpId))) || (data[32] & 5) != 5)
             throw new InvalidOperationException("Preuve Windows Hello invalide.");
     }
-    public static HelloCredential ReadRegistration(byte[] id, byte[] data)
+    public static HelloCredential ReadRegistration(byte[] id, byte[] data, string? rpId = null)
     {
-        CheckAuthenticator(data);
+        CheckAuthenticator(data, rpId);
         if ((data[32] & 64) == 0 || data.Length < 55) throw new InvalidOperationException("Attestation incomplète.");
         var length = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(53, 2));
         if (data.Length < 55 + length || !data.AsSpan(55, length).SequenceEqual(id)) throw new InvalidOperationException("Identifiant Hello incorrect.");
@@ -47,17 +47,17 @@ internal static class HelloVerification
             using var algorithm = RSA.Create(); algorithm.ImportParameters(new RSAParameters { Modulus = first, Exponent = second });
         } else throw new InvalidOperationException("Clé Hello invalide.");
     }
-    public static void Verify(HelloCredential key, HelloProof proof, string challenge)
+    public static void Verify(HelloCredential key, HelloProof proof, string challenge, string? rpId = null, string? origin = null)
     {
         ValidateKey(key);
         if (!CryptographicOperations.FixedTimeEquals(Convert.FromBase64String(proof.CredentialId), Convert.FromBase64String(key.Id))) throw new InvalidOperationException("Autre clé Hello.");
         var client = Convert.FromBase64String(proof.ClientData);
         using var document = JsonDocument.Parse(client);
         var json = document.RootElement;
-        if (json.GetProperty("type").GetString() != "webauthn.get" || json.GetProperty("origin").GetString() != AppPaths.Origin ||
+        if (json.GetProperty("type").GetString() != "webauthn.get" || json.GetProperty("origin").GetString() != (origin ?? AppPaths.Origin) ||
             json.GetProperty("challenge").GetString() != challenge || (json.TryGetProperty("crossOrigin", out var cross) && cross.GetBoolean())) throw new InvalidOperationException("Challenge Hello invalide.");
         var auth = Convert.FromBase64String(proof.AuthenticatorData);
-        CheckAuthenticator(auth);
+        CheckAuthenticator(auth, rpId);
         var message = auth.Concat(SHA256.HashData(client)).ToArray();
         var signature = Convert.FromBase64String(proof.Signature);
         bool valid;

@@ -32,40 +32,40 @@ internal static class HelloNative
 
     public static bool Available { get { try { return WebAuthNIsUserVerifyingPlatformAuthenticatorAvailable(out var available) == 0 && available; } catch { return false; } } }
     public static uint ApiVersion { get { try { return WebAuthNGetApiVersionNumber(); } catch { return 0; } } }
-    private static string ClientJson(string type, string challenge) => JsonSerializer.Serialize(new { type, challenge, origin = AppPaths.Origin, crossOrigin = false });
+    private static string ClientJson(string type, string challenge, string? origin = null) => JsonSerializer.Serialize(new { type, challenge, origin = origin ?? AppPaths.Origin, crossOrigin = false });
     private static byte[] Copy(IntPtr address, uint length) {
         if (length > 1024 * 1024) throw new InvalidOperationException("Réponse Windows Hello invalide.");
         var bytes = new byte[length]; Marshal.Copy(address, bytes, 0, bytes.Length); return bytes;
     }
     private static void Check(int result) { if (result != 0) throw new InvalidOperationException("Windows Hello annulé ou indisponible (0x" + result.ToString("X8") + ")."); }
-    public static HelloCredential Register(IntPtr window, string sid, string email)
+    public static HelloCredential Register(IntPtr window, string sid, string email, string? rpId = null, string? origin = null)
     {
         using var memory = new Arena();
         var id = SHA256.HashData(Encoding.UTF8.GetBytes(sid));
-        var rp = new Rp { Version = 1, Id = AppPaths.RpId, Name = "Coffre Bitwarden" };
+        var rp = new Rp { Version = 1, Id = rpId ?? AppPaths.RpId, Name = "Coffre Bitwarden" };
         var user = new User { Version = 1, Length = (uint)id.Length, Id = memory.Bytes(id), Name = email, DisplayName = email };
         var parameters = memory.Algorithms(new[] { new Algorithm { Version = 1, Type = "public-key", Value = -7 }, new Algorithm { Version = 1, Type = "public-key", Value = -257 } });
         var algorithms = new List { Count = 2, Values = parameters };
-        var json = Encoding.UTF8.GetBytes(ClientJson("webauthn.create", HelloVerification.Base64Url(RandomNumberGenerator.GetBytes(32))));
+        var json = Encoding.UTF8.GetBytes(ClientJson("webauthn.create", HelloVerification.Base64Url(RandomNumberGenerator.GetBytes(32)), origin));
         var client = new ClientData { Version = 1, Length = (uint)json.Length, Json = memory.Bytes(json), HashAlgorithm = "SHA-256" };
         var options = new MakeOptions { Version = 1, Timeout = 60000, Attachment = 1, Verification = 1, Attestation = 1 };
         Check(WebAuthNAuthenticatorMakeCredential(window, ref rp, ref user, ref algorithms, ref client, ref options, out var result));
         try {
             var value = Marshal.PtrToStructure<Attestation>(result);
-            return HelloVerification.ReadRegistration(Copy(value.Id, value.IdLength), Copy(value.AuthData, value.AuthLength));
+            return HelloVerification.ReadRegistration(Copy(value.Id, value.IdLength), Copy(value.AuthData, value.AuthLength), rpId);
         }
         finally { WebAuthNFreeCredentialAttestation(result); }
     }
-    public static HelloProof Sign(IntPtr window, HelloCredential registered, string challenge)
+    public static HelloProof Sign(IntPtr window, HelloCredential registered, string challenge, string? rpId = null, string? origin = null)
     {
         using var memory = new Arena();
         var id = Convert.FromBase64String(registered.Id);
         var credential = new Credential { Version = 1, Length = (uint)id.Length, Id = memory.Bytes(id), Type = "public-key" };
-        var json = Encoding.UTF8.GetBytes(ClientJson("webauthn.get", challenge));
+        var json = Encoding.UTF8.GetBytes(ClientJson("webauthn.get", challenge, origin));
         var client = new ClientData { Version = 1, Length = (uint)json.Length, Json = memory.Bytes(json), HashAlgorithm = "SHA-256" };
         var options = new GetOptions { Version = 1, Timeout = 60000, Attachment = 1, Verification = 1,
             Allow = new List { Count = 1, Values = memory.Structure(credential) } };
-        Check(WebAuthNAuthenticatorGetAssertion(window, AppPaths.RpId, ref client, ref options, out var result));
+        Check(WebAuthNAuthenticatorGetAssertion(window, rpId ?? AppPaths.RpId, ref client, ref options, out var result));
         try {
             var value = Marshal.PtrToStructure<Assertion>(result);
             return new(Convert.ToBase64String(Copy(value.Credential.Id, value.Credential.Length)), Convert.ToBase64String(json),

@@ -17,6 +17,8 @@ internal static class RemoteCommands
             case "settings": ApplicationConfiguration.Initialize(); Application.Run(new RemoteClientForm(initialServer: args.Length > 1 ? args[1] : null)); return 0;
             case "status": Print(RemoteConnection.CallAsync("status", new { }).GetAwaiter().GetResult()); return 0;
             case "vaults": Print(RemoteConnection.CallAsync("vaults", new { }).GetAwaiter().GetResult()); return 0;
+            case "hello-status": Print(new { available = HelloNative.Available, apiVersion = HelloNative.ApiVersion }); return 0;
+            case "hello-setup": ApplicationConfiguration.Initialize(); Application.Run(new RemoteHelloForm()); return 0;
             case "sharing": Print(RemoteConnection.CallAsync("sharing", new { }).GetAwaiter().GetResult()); return 0;
             case "share" when args.Length == 1:
                 using (var document = System.Text.Json.JsonDocument.Parse(ReadInput())) Print(RemoteConnection.CallAsync("share", document.RootElement).GetAwaiter().GetResult()); return 0;

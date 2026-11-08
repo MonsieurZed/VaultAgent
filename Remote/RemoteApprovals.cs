@@ -27,15 +27,30 @@ internal static partial class RemoteConnection
         try { return new { deviceId = Encoding.UTF8.GetString(token).Split('.')[1], publicKey = Convert.ToBase64String(rsa.ExportSubjectPublicKeyInfo()) }; }
         finally { CryptographicOperations.ZeroMemory(token); }
     }
-    internal static async Task DecideAsync(JsonElement request, bool approve, bool remember)
+    internal static string DecisionMessage(JsonElement request, bool approve, bool remember)
     {
-        using var rsa = ApprovalKey(); var server = ValidateServer(Read().Server);
+        var server = ValidateServer(Read().Server);
         var vaultId = request.TryGetProperty("vaultId", out var vault) ? vault.GetString() : "default";
         var requestId = request.GetProperty("requestId").GetString(); var challenge = request.GetProperty("challenge").GetString();
         var options = new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-        var message = JsonSerializer.Serialize(new object?[] { "VaultAgent.Unlock.v2", server, vaultId, requestId, challenge, approve, remember }, options);
+        return JsonSerializer.Serialize(new object?[] { "VaultAgent.Unlock.v2", server, vaultId, requestId, challenge, approve, remember }, options);
+    }
+    internal static string ApprovalSignature(string message) {
+        using var rsa = ApprovalKey();
         var signature = rsa.SignData(Encoding.UTF8.GetBytes(message), HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
-        await CallAsync("decide-unlock", new { requestId, approve, remember, signature = Convert.ToBase64String(signature) }, vaultId);
+        return Convert.ToBase64String(signature);
+    }
+    internal static async Task DecideAsync(JsonElement request, bool approve, bool remember, IntPtr window = default)
+    {
+        var message = DecisionMessage(request, approve, remember); HelloProof? helloProof = null;
+        if (approve && request.TryGetProperty("helloRequired", out var required) && required.GetBoolean()) {
+            if (!request.TryGetProperty("helloCredential", out var key) || key.ValueKind == JsonValueKind.Null || !HelloNative.Available) throw new InvalidOperationException("Windows Hello requis ou indisponible.");
+            var credential = key.Deserialize<HelloCredential>(AppPaths.Json)!;
+            var challenge = HelloVerification.Base64Url(SHA256.HashData(Encoding.UTF8.GetBytes(message)));
+            helloProof = HelloNative.Sign(window, credential, challenge, HelloRp, HelloOrigin); HelloVerification.Verify(credential, helloProof, challenge, HelloRp, HelloOrigin);
+        }
+        var vaultId = request.TryGetProperty("vaultId", out var vault) ? vault.GetString() : "default";
+        await CallAsync("decide-unlock", new { requestId = request.GetProperty("requestId").GetString(), approve, remember, signature = ApprovalSignature(message), helloProof }, vaultId);
     }
     internal static async Task ResetAutomaticAsync(string vaultId) => await DecideAsync(await CallAsync("approval-context", new { }, vaultId), false, false);
 }
@@ -58,10 +73,16 @@ internal sealed class RemoteApprovalForm : Form
         var always = new CheckBox { Text = UiText.T("Toujours accepter les demandes de ce client"), Left = 20, Top = 100, Width = 380, Height = 28 };
         var yes = new Button { Text = UiText.T("Oui"), Left = 200, Top = 155, Width = 90, Height = 34, BackColor = Color.FromArgb(112, 65, 199), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
         var no = new Button { Text = UiText.T("Non"), Left = 300, Top = 155, Width = 90, Height = 34 };
+        if (request.TryGetProperty("helloRequired", out var required) && required.GetBoolean()) {
+            yes.Left = 100; yes.Width = 190; yes.Text = UiText.T("Oui avec Windows Hello");
+            if (!HelloNative.Available || !request.TryGetProperty("helloCredential", out var key) || key.ValueKind == JsonValueKind.Null) {
+                yes.Enabled = always.Enabled = false; title.Text = UiText.T("Windows Hello requis : activez-le dans le bouclier."); title.Font = new Font("Segoe UI", 11, FontStyle.Bold);
+            }
+        }
         var end = request.GetProperty("expiresUtc").GetDateTimeOffset();
         async Task Decide(bool approved) {
             if (deciding) return; deciding = true; yes.Enabled = no.Enabled = always.Enabled = false;
-            try { await RemoteConnection.DecideAsync(request, approved, approved && always.Checked); Close(); }
+            try { await RemoteConnection.DecideAsync(request, approved, approved && always.Checked, Handle); Close(); }
             catch { title.Text = UiText.T("Demande expirée ou opération refusée"); expiry.Stop(); await Task.Delay(2500); Close(); }
         }
         yes.Click += async (_, _) => await Decide(true); no.Click += async (_, _) => await Decide(false);

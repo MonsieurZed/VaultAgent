@@ -86,3 +86,10 @@ CLI : `vaults`, puis `status --vault UUID`, `catalog nom --vault UUID`, `sharing
 Le bouclier surveille les coffres autorisés, et indique le nom du coffre dans la confirmation.
 Les transferts natifs entre compte personnel et organisation utilisent `share` avec prévisualisation,
 révision et confirmation du changement de propriété. Lire le guide du skill avant d'appliquer.
+## Windows Hello — preview.5
+
+Le menu Activer Windows Hello du bouclier configure la preuve verifiee par Linux pour les
+confirmations manuelles. `hello-status` ne lance pas de verification ; `hello-setup` ouvre
+la configuration interactive. Le PIN reste dans Windows. Annulation/indisponibilite refusent
+l'accord, avec Aucun secours automatique. Les politiques Toujours accepter restent actives.
+Voir [le guide](https://github.com/MonsieurZed/VaultAgent/blob/main/docs/remote-hello.md) pour les conditions et limites.

@@ -1,4 +1,4 @@
-# Serveur Linux et clients — 3.0.0-preview.4
+# Serveur Linux et clients — 3.0.0-preview.5
 
 ## Plusieurs comptes et fiches communes
 
@@ -34,6 +34,14 @@ est prise en compte avant de servir une fiche. Les reçus ne contiennent aucune 
 Guide agent : [sélection et partage](../skills/vault-agent/references/multi-vault.md).
 
 ## Demandes de déverrouillage
+
+La preview.5 ajoute Windows Hello aux confirmations du client distant : activation depuis le
+bouclier, enrolement avec preuve de possession, puis assertions WebAuthn verifiees par Linux.
+Sur le coffre active, un accord manuel exige une preuve Hello ; Non et les autorisations
+automatiques explicites conservent leur fonctionnement. Aucun secours automatique par simple
+signature DPAPI. Voir [configuration, verification et limites](../docs/remote-hello.md).
+La politique est conservee dans approval-policy.json, liee au profil du compte, et les cles
+publiques Hello dans les appareils. Le portail du proprietaire Authentik reste une voie distincte.
 
 Un client associé peut appeler `requestUnlock()` ou `unlock({waitSeconds:60})` du helper.
 Dans Clients, le propriétaire peut cocher « Toujours accepter les demandes de ce client ».
