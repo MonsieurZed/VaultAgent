@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType><TargetFramework>net9.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
-    <AssemblyName>VaultAgent-Client</AssemblyName><RootNamespace>Homelab.Vault</RootNamespace><Version>3.0.0-preview.1</Version><RollForward>LatestMajor</RollForward>
+    <AssemblyName>VaultAgent-Client</AssemblyName><RootNamespace>Homelab.Vault</RootNamespace><Version>3.0.0-preview.2</Version><RollForward>LatestMajor</RollForward>
     <ApplicationManifest>client.manifest</ApplicationManifest><ApplicationIcon>../assets/shield.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>

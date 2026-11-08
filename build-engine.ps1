@@ -17,6 +17,7 @@ $actual = (& git -C $Source rev-parse HEAD).Trim()
 if ($actual -ne $expected) { throw 'Révision upstream inattendue.' }
 $Source = (& git -C $Source rev-parse --show-toplevel).Trim()
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'fork\agent.ts') -Destination (Join-Path $Source 'apps\cli\src\homelab-agent.ts') -Force
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'fork\write-patch.mjs') -Destination (Join-Path $Source 'apps\cli\src\homelab-write-patch.mjs') -Force
 $dependencies = Join-Path $PSScriptRoot '.build-deps'
 New-Item -ItemType Directory -Path $dependencies -Force | Out-Null
 $upstream = Get-Content (Join-Path $Source 'package.json') -Raw | ConvertFrom-Json -AsHashtable

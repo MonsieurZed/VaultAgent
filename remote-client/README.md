@@ -6,6 +6,21 @@ le champ sans presse-papiers. Aucune valeur n'est renvoyee au modele dans le flu
 Un agent avec du code arbitraire ou le controle complet du navigateur peut encore lire
 les champs. Ce mecanisme ne constitue pas une isolation contre cet agent.
 
+## Enregistrer et gérer les fiches — preview.2
+
+Le helper expose `writePreview(itemId?)`, `createFolder(operationId,name)` et
+`saveFromSource({operationId,action,metadata,source,itemId?,expectedRevisionDate?})`.
+Les secrets restent dans une fonction source locale puis traversent stdin/HTTPS ; les reçus
+contiennent seulement UUID, action, révision et vérification. Connexions et notes sécurisées
+sont prises en charge. Les mises à jour ciblées préservent les passkeys et les champs non visés.
+Guide et exemples : [écriture sans lecture](https://github.com/MonsieurZed/VaultAgent/blob/main/skills/vault-agent/references/write.md).
+
+Le serveur doit être déverrouillé et le client associé. Aucune lecture brute ni commande de
+suppression n'est ajoutée. Le service Windows autonome 2.x reste inchangé.
+Conserver une UUID par opération : répétition identique sans doublon, contenu différent refusé.
+Après `write-indeterminate`, arrêter les répétitions et réconcilier les métadonnées ; une panne
+peut avoir laissé une écriture effective. Ne pas changer l'UUID pour contourner cette protection.
+
 ## Windows
 
 L'installateur ajoute le bouclier en arriere-plan, le demarrage automatique et la desinstallation

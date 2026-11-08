@@ -12,10 +12,21 @@ internal static class RemoteCommands
             case "status": Print(RemoteConnection.CallAsync("status", new { }).GetAwaiter().GetResult()); return 0;
             case "lock": Print(RemoteConnection.CallAsync("lock", new { }).GetAwaiter().GetResult()); return 0;
             case "catalog": Print(RemoteConnection.CallAsync("catalog", new { search = args.Length > 1 ? args[1] : "" }).GetAwaiter().GetResult()); return 0;
+            case "write" when args.Length == 1:
+                using (var document = System.Text.Json.JsonDocument.Parse(ReadInput())) Print(RemoteConnection.CallAsync("write", document.RootElement).GetAwaiter().GetResult()); return 0;
+            case "write-preview" when args.Length == 2: Print(RemoteConnection.CallAsync("write-preview", new { itemId = args[1] }).GetAwaiter().GetResult()); return 0;
+            case "write-preview" when args.Length == 1: Print(RemoteConnection.CallAsync("write-preview", new { }).GetAwaiter().GetResult()); return 0;
             case "seal" when args.Length == 5: Print(RemoteConnection.CallAsync("seal", new { itemId = args[1], field = args[2], publicKey = args[3], origin = args[4] }).GetAwaiter().GetResult()); return 0;
             case "type" when args.Length == 4: Print(RemoteConnection.TypeAsync(args[1], args[2], args[3]).GetAwaiter().GetResult()); return 0;
-            default: throw new ArgumentException("Commandes : settings, status, catalog, lock, seal, type.");
+            default: throw new ArgumentException("Commandes : settings, status, catalog, lock, seal, type, write-preview, write (JSON sur stdin).");
         }
     }
     private static void Print(object value) => Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(value, AppPaths.Json));
+    private static string ReadInput() {
+        if (!Console.IsInputRedirected) throw new ArgumentException("Flux redirige requis.");
+        Console.InputEncoding = new System.Text.UTF8Encoding(false, true);
+        var output = new System.Text.StringBuilder(); var block = new char[2048]; int count;
+        while ((count = Console.In.Read(block, 0, block.Length)) != 0) { if (output.Length + count > 24000) throw new ArgumentException("Requete trop volumineuse."); output.Append(block, 0, count); }
+        return output.ToString();
+    }
 }

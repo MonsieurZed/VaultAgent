@@ -1,12 +1,18 @@
 ---
 name: vault-agent
-description: Remplir des identifiants et codes TOTP avec VaultAgent sous Windows sans afficher leurs valeurs. Utiliser pour une connexion dans un navigateur contrôlé par l'agent ou une application Windows lorsque VaultAgent est installé.
+description: Remplir des identifiants et TOTP ou enregistrer et gérer des fiches avec VaultAgent sans renvoyer les secrets au modèle. Utiliser avec le client Windows/Linux associé ou le service Windows autonome installé.
 license: MIT
 ---
 
 # VaultAgent
 
-Utiliser le service local installé dans `%ProgramFiles%\HomelabVaultAgent`.
+Pour **enregistrer ou gérer des fiches**, utiliser le client associé au serveur Linux
+**3.0.0-preview.2 ou ultérieur** : lire [references/write.md](references/write.md).
+Cette méthode sait créer des connexions, notes sécurisées et dossiers, puis modifier les champs
+autorisés avec une révision attendue. Le service Windows autonome 2.x n'a pas cette API.
+
+Pour le **remplissage via le service Windows autonome**, suivre les instructions ci-dessous.
+Il est installé dans `%ProgramFiles%\HomelabVaultAgent`.
 Les champs disponibles sont `username`, `password` et `totp`. Le catalogue fournit les UUID,
 titres et origines des fiches ; les valeurs sont remplies par un helper sans être renvoyées au modèle.
 

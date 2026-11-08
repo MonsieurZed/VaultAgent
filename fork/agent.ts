@@ -9,6 +9,11 @@ import { ServiceContainer } from "@agent-upstream/service-container/service-cont
 import { OssServeConfigurator } from "@agent-upstream/oss-serve-configurator";
 import { LoginCommand } from "@agent-upstream/auth/commands/login.command";
 import { ConfigCommand } from "@agent-upstream/platform/commands/config.command";
+import { firstValueFrom } from "rxjs";
+import { getUserId } from "@bitwarden/common/auth/services/account.service";
+import { CipherView } from "@bitwarden/common/vault/models/view/cipher.view";
+import { PolicyType } from "@bitwarden/common/admin-console/enums";
+import { applyWritePatch } from "./homelab-write-patch.mjs";
 
 const write = (value: unknown) => process.stdout.write(JSON.stringify(value) + "\n");
 console.log = console.info = console.warn = console.error = () => {};
@@ -111,6 +116,17 @@ async function main() {
           const value = saved.login?.fido2Credentials?.find((entry: any) => entry.credentialId === credential.credentialId);
           if (!value || value.keyValue !== credential.keyValue || value.rpId !== credential.rpId) throw new Error("passkey-storage");
           data = { id: item.id, verified: true };
+        } else if (request.op === "safe-update") {
+          stage = "write";
+          const userId = await firstValueFrom(c.accountService.activeAccount$.pipe(getUserId));
+          const cipher = await c.cipherService.get(request.itemId, userId);
+          if (!cipher || !await firstValueFrom(c.cipherAuthorizationService.canEditCipher$(cipher))) throw new Error("refused");
+          if (await firstValueFrom(c.policyService.policyAppliesToUser$(PolicyType.OrganizationDataOwnership, userId))) throw new Error("refused");
+          const original = await c.cipherService.decrypt(cipher, userId);
+          const view = CipherView.fromJSON(JSON.parse(JSON.stringify(original)))!;
+          applyWritePatch(view, request.expectedRevisionDate, request.patch);
+          await c.cipherService.updateWithServer(view, userId, original);
+          data = { id: request.itemId };
         } else if (request.op === "call") {
           if (request.path.startsWith("/unlock")) throw new Error("reserved");
           data = await call(request.method, request.path, request.body);

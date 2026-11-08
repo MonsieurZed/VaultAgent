@@ -9,9 +9,10 @@ import { generateKeyPairSync, privateDecrypt, createDecipheriv, constants } from
 const root = dirname(fileURLToPath(import.meta.url));
 export const defaultConfig = () => join(homedir(), '.config', 'vaultagent', 'client.json');
 export function validServer(address) { const url = new URL(address); if (url.protocol !== 'https:' || url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw new Error('HTTPS VaultAgent server required'); return url.origin; }
-async function native(args, executable = join(root, 'VaultAgent-Client.exe')) {
+async function native(args, executable = join(root, 'VaultAgent-Client.exe'), payload) {
   return new Promise((resolve, reject) => {
-    const child = spawn(executable, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }); let output = '';
+    const child = spawn(executable, args, { windowsHide: true, stdio: [payload ? 'pipe' : 'ignore', 'pipe', 'pipe'] }); let output = '';
+    if (payload) { child.stdin.on('error', () => {}); child.stdin.end(JSON.stringify(payload), 'utf8'); }
     const timer = setTimeout(() => child.kill(), 115000); child.stderr.resume();
     child.stdout.on('data', value => { output += value; if (output.length > 4 * 1024 * 1024) child.kill(); });
     child.once('error', () => { clearTimeout(timer); reject(new Error('Remote client unavailable')); });
@@ -19,10 +20,10 @@ async function native(args, executable = join(root, 'VaultAgent-Client.exe')) {
   });
 }
 export async function request(operation, payload = {}, options = {}) {
-  if (!['status', 'catalog', 'lock', 'seal'].includes(operation)) throw new Error('Operation refused');
+  if (!['status', 'catalog', 'lock', 'seal', 'write', 'write-preview'].includes(operation)) throw new Error('Operation refused');
   if (process.platform === 'win32' && !options.configFile) {
-    const args = operation === 'catalog' ? ['catalog', payload.search || ''] : operation === 'seal' ? ['seal', payload.itemId, payload.field, payload.publicKey, payload.origin] : [operation];
-    return native(args, options.executable);
+    const args = operation === 'catalog' ? ['catalog', payload.search || ''] : operation === 'seal' ? ['seal', payload.itemId, payload.field, payload.publicKey, payload.origin] : operation === 'write-preview' ? payload.itemId ? ['write-preview', payload.itemId] : ['write-preview'] : [operation];
+    return native(args, options.executable, operation === 'write' ? payload : undefined);
   }
   const file = options.configFile || defaultConfig(); const details = await stat(file);
   if (process.platform !== 'win32' && ((details.mode & 0o077) || details.uid !== process.getuid())) throw new Error('Client configuration must be private (0600)');
@@ -34,6 +35,29 @@ export async function request(operation, payload = {}, options = {}) {
 export const status = options => request('status', {}, options);
 export const catalog = (search = '', options) => request('catalog', { search }, options);
 export const lock = options => request('lock', {}, options);
+export const writePreview = (itemId, options) => request('write-preview', { itemId }, options);
+export const createFolder = (operationId, name, options) => request('write', { operationId, action: 'create-folder', item: { name } }, options);
+// Le fournisseur lit la source dans le même processus ; ses valeurs ne sont jamais renvoyées.
+export async function saveFromSource({ operationId, action, itemId, expectedRevisionDate, metadata, source, ...options }) {
+  if (typeof source !== 'function') throw new Error('Source callback required');
+  let values;
+  try {
+    if (!['create', 'update'].includes(action) || !metadata || typeof metadata !== 'object' || Array.isArray(metadata)) throw new Error('Invalid metadata');
+    const allowed = action === 'create' ? ['type', 'name', 'folderId', 'login'] : ['name', 'folderId'];
+    if (Object.keys(metadata).some(key => !allowed.includes(key)) || metadata.login && Object.keys(metadata.login).some(key => key !== 'uris')) throw new Error('Secrets belong in source');
+    values = await source();
+    if (!values || typeof values !== 'object' || Array.isArray(values) || Object.keys(values).some(k => !['username', 'password', 'totp', 'notes'].includes(k))) throw new Error('Invalid source');
+    let payload;
+    if (action === 'create') {
+      const item = { ...metadata }; if ('notes' in values) item.notes = values.notes;
+      if (item.type === 1) { item.login = { ...(metadata?.login || {}) }; for (const field of ['username', 'password', 'totp']) if (field in values) item.login[field] = values[field]; }
+      else if (Object.keys(values).some(k => k !== 'notes')) throw new Error('Invalid source');
+      payload = { operationId, action, item };
+    } else payload = { operationId, action, itemId, expectedRevisionDate, patch: { ...metadata, ...values } };
+    return await request('write', payload, options);
+  } catch { throw new Error('Save refused or indeterminate: retain operationId; inspect receipt and preview before retry'); }
+  finally { values = null; }
+}
 export async function fillBrowser({ locator, itemId, field, origin, ...options }) {
   if (!['username', 'password', 'totp'].includes(field) || !locator || typeof locator.fill !== 'function' || validServer(origin) !== origin) throw new Error('Target field and HTTPS origin required');
   const { publicKey, privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });

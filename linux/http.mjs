@@ -27,11 +27,13 @@ export function createApp({ session, devices, origin, owner, trustedProxy, webDi
         if (path === '/api/agent/status') send(response, 200, session.status());
         else if (path === '/api/agent/catalog') send(response, 200, await session.catalog(data.search, authorized));
         else if (path === '/api/agent/seal') send(response, 200, await session.secret(data, authorized));
+        else if (path === '/api/agent/write-preview') send(response, 200, await session.writePreview(data, authorized));
+        else if (path === '/api/agent/write') send(response, 200, await session.write(data, authorized));
         else if (path === '/api/agent/lock') { session.lock(); send(response, 200, { locked: true }); }
         else throw new Error('route-refused'); return;
       }
       if (!owner || request.headers['x-authentik-username'] !== owner) throw new Error('owner-required');
-      const download = { '/downloads/windows-client.zip': 'VaultAgent-Windows-Client-3.0.0-preview.1-x64.zip', '/downloads/linux-client.tar.gz': 'VaultAgent-Linux-Client-3.0.0-preview.1.tar.gz', '/downloads/windows-client.zip.sha256': 'VaultAgent-Windows-Client-3.0.0-preview.1-x64.zip.sha256', '/downloads/linux-client.tar.gz.sha256': 'VaultAgent-Linux-Client-3.0.0-preview.1.tar.gz.sha256' }[path];
+      const download = { '/downloads/windows-client.zip': 'VaultAgent-Windows-Client-3.0.0-preview.2-x64.zip', '/downloads/linux-client.tar.gz': 'VaultAgent-Linux-Client-3.0.0-preview.2.tar.gz', '/downloads/windows-client.zip.sha256': 'VaultAgent-Windows-Client-3.0.0-preview.2-x64.zip.sha256', '/downloads/linux-client.tar.gz.sha256': 'VaultAgent-Linux-Client-3.0.0-preview.2.tar.gz.sha256' }[path];
       if (request.method === 'GET' && download && downloadsDirectory) {
         const stream = createReadStream(join(downloadsDirectory, download));
         response.once('close', () => stream.destroy());

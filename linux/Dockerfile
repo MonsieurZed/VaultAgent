@@ -13,6 +13,7 @@ COPY linux ./linux
 COPY remote-client ./remote-client
 COPY LICENSE LICENSE-GPL.txt THIRD-PARTY.md ./
 COPY fork ./sources/fork
+COPY fork/write-patch.mjs ./fork/write-patch.mjs
 USER 1000:1000
 ENV NODE_ENV=production
 EXPOSE 8080

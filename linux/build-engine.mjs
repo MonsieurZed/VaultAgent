@@ -10,6 +10,7 @@ run('git', ['checkout', '--detach', '91214c3b978edb5496a32a946451960fe7d44531'],
 const revision = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: source, encoding: 'utf8' });
 if (revision.stdout.trim() !== '91214c3b978edb5496a32a946451960fe7d44531') throw new Error('Unexpected upstream revision');
 copyFileSync('fork/agent.ts', join(source, 'apps/cli/src/homelab-agent.ts'));
+copyFileSync('fork/write-patch.mjs', join(source, 'apps/cli/src/homelab-write-patch.mjs'));
 const upstream = JSON.parse(readFileSync(join(source, 'package.json'))); const cli = JSON.parse(readFileSync(join(source, 'apps/cli/package.json')));
 mkdirSync(build, { recursive: true }); mkdirSync(runtime, { recursive: true });
 const dependencies = { ...upstream.dependencies, ...cli.dependencies }; delete dependencies['@bitwarden/desktop-napi'];

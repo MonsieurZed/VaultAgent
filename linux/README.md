@@ -1,4 +1,14 @@
-# Serveur Linux et clients — 3.0.0-preview.1
+# Serveur Linux et clients — 3.0.0-preview.2
+
+La preview.2 ajoute l'écriture dédiée sans lecture pour les clients associés : création de
+connexions, notes sécurisées et dossiers, prévisualisation des métadonnées et édition ciblée.
+Voir [le protocole](../skills/vault-agent/references/write.md). Le serveur vérifie chaque écriture
+par relecture interne et conserve des reçus idempotents dans son volume privé. Une interruption
+après intention d'écriture bloque les répétitions automatiques plutôt que risquer un doublon.
+Les reçus ne contiennent aucun secret ; leur empreinte interne est un HMAC avec la clé machine.
+La limite actuelle est 10 000 opérations conservées ; aucune purge automatique ne compromet
+la protection contre les répétitions. Les opérations d'autres clients externes restent soumises
+aux contrôles de révision du SDK/serveur ; le verrou de sérialisation ne couvre que VaultAgent.
 
 Serveur deploye sur Maison : https://vaultagent.lan.zed.cx. Authentik protege
 l'administration et l'association des clients utilise un code unique valable cinq minutes.

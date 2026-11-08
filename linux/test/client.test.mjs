@@ -16,14 +16,21 @@ test('helper distant : HTTPS verifie, remplissage factice et retour sans valeur 
   const password = 'VaultAgent-Remote-Fictif-42!'; const fakeToken = 'TEST-TOKEN-WITHOUT-ACCESS';
   const server = createServer({ key: await readFile(join(directory, 'test.key')), cert: await readFile(join(directory, 'test.crt')) }, async (request, response) => {
     assert.equal(request.headers.authorization, 'Bearer ' + fakeToken); let body = ''; for await (const part of request) body += part;
-    const data = JSON.parse(body); assert.equal(request.url, '/api/agent/seal'); assert.equal(data.origin, 'https://example.test');
+    const data = JSON.parse(body);
+    if (request.url === '/api/agent/write') {
+      assert.equal(data.action, 'create'); assert.equal(data.item.login.password, password); assert.equal(data.item.name, 'Exemple factice');
+      response.setHeader('content-type', 'application/json'); response.end(JSON.stringify({ verified: true, id: '00000000-0000-4000-8000-000000000001' })); return;
+    }
+    assert.equal(request.url, '/api/agent/seal'); assert.equal(data.origin, 'https://example.test');
     response.setHeader('content-type', 'application/json'); response.end(JSON.stringify(seal(password, data.publicKey)));
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve)); t.after(() => new Promise(resolve => server.close(resolve)));
   const file = join(directory, 'client.json'); await writeFile(file, JSON.stringify({ server: 'https://127.0.0.1:' + server.address().port, token: fakeToken }), { mode: 0o600 });
-  const script = `import {fillBrowser} from ${JSON.stringify(new URL('../../remote-client/agent-tools.mjs', import.meta.url).href)};
+  const script = `import {fillBrowser,saveFromSource} from ${JSON.stringify(new URL('../../remote-client/agent-tools.mjs', import.meta.url).href)};
 let filled=false;const result=await fillBrowser({locator:{fill:async value=>{if(value!==${JSON.stringify(password)})throw new Error('fake-fill-mismatch');filled=true;}},itemId:'00000000-0000-4000-8000-000000000001',field:'password',origin:'https://example.test',configFile:${JSON.stringify(file)}});
-if(!filled)throw new Error('not-filled');console.log(JSON.stringify(result));`;
+if(!filled)throw new Error('not-filled');
+const saved=await saveFromSource({operationId:'00000000-0000-4000-8000-000000000002',action:'create',metadata:{type:1,name:'Exemple factice'},source:async()=>({password:${JSON.stringify(password)}}),configFile:${JSON.stringify(file)}});
+if(!saved.verified)throw new Error('not-saved');console.log(JSON.stringify(result));`;
   const output = await new Promise((resolve, reject) => {
     const child = spawn(process.execPath, ['--input-type=module', '-e', script], { windowsHide: true, env: { ...process.env, NODE_EXTRA_CA_CERTS: join(directory, 'test.crt') } }); let text = ''; let errors = '';
     child.stdout.on('data', part => text += part); child.stderr.on('data', part => errors += part); child.once('error', reject); child.once('exit', code => code === 0 ? resolve(text) : reject(new Error('Test helper failed: ' + errors)));

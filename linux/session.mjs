@@ -1,5 +1,6 @@
 import { randomUUID, randomBytes, createPublicKey, createCipheriv, publicEncrypt, constants } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
+import { previewWrite, saveWrite } from './writes.mjs';
 
 export function seal(value, publicKey) {
   const key = createPublicKey({ key: Buffer.from(publicKey, 'base64'), type: 'spki', format: 'der' });
@@ -14,11 +15,13 @@ export function originOf(text) { try { const url = new URL(text); return url.pro
 export class Session {
   constructor(store, factory, clock = () => performance.now()) { this.store = store; this.factory = factory; this.clock = clock; this.generation = 0; this.tail = Promise.resolve(); }
   serial(action) { const result = this.tail.then(action); this.tail = result.catch(() => {}); return result; }
-  status() { this.expire(); return { version: '3.0.0-preview.1', configured: !!this.store.account, unlocked: !!this.engine, timeoutMinutes: this.store.account?.timeoutMinutes ?? null, expiresUtc: this.engine && this.deadline !== null ? new Date(Date.now() + Math.max(0, this.deadline - this.clock())).toISOString() : null }; }
+  status() { this.expire(); return { version: '3.0.0-preview.2', configured: !!this.store.account, unlocked: !!this.engine, timeoutMinutes: this.store.account?.timeoutMinutes ?? null, expiresUtc: this.engine && this.deadline !== null ? new Date(Date.now() + Math.max(0, this.deadline - this.clock())).toISOString() : null }; }
   touch() { this.deadline = this.store.account.timeoutMinutes === null ? null : this.clock() + this.store.account.timeoutMinutes * 60000; }
   lock() { ++this.generation; this.engine?.kill(); this.engine = null; this.deadline = null; }
   expire() { if (this.engine && (this.engine.alive === false || this.deadline !== null && this.clock() >= this.deadline)) this.lock(); }
   access(generation = this.generation) { this.expire(); if (!this.engine || generation !== this.generation) throw new Error('locked'); return this.engine; }
+  writePreview(input, authorize = () => {}) { return this.serial(() => { authorize(); return previewWrite(this, input.itemId, authorize); }); }
+  write(input, authorize = () => {}) { return this.serial(() => saveWrite(this, input, authorize)); }
   async connect(account, password, code) {
     let candidate;
     try {
