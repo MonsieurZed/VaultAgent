@@ -58,14 +58,14 @@ internal static class PipeTransport
         var bytes = JsonSerializer.SerializeToUtf8Bytes(value, AppPaths.Json);
         if (bytes.Length > 32 * 1024 * 1024) throw new IOException("Réponse trop volumineuse.");
         var length = new byte[4]; BinaryPrimitives.WriteInt32LittleEndian(length, bytes.Length);
-        await stream.WriteAsync(length, token); await stream.WriteAsync(bytes, token); await stream.FlushAsync(token);
+        await stream.WriteAsync(length, token).ConfigureAwait(false); await stream.WriteAsync(bytes, token).ConfigureAwait(false); await stream.FlushAsync(token).ConfigureAwait(false);
     }
     public static async Task<T> ReadAsync<T>(Stream stream, int maximum, CancellationToken token)
     {
-        var header = new byte[4]; await stream.ReadExactlyAsync(header, token);
+        var header = new byte[4]; await stream.ReadExactlyAsync(header, token).ConfigureAwait(false);
         var length = BinaryPrimitives.ReadInt32LittleEndian(header);
         if (length <= 0 || length > maximum) throw new IOException("Taille de requête invalide.");
-        var bytes = new byte[length]; await stream.ReadExactlyAsync(bytes, token);
+        var bytes = new byte[length]; await stream.ReadExactlyAsync(bytes, token).ConfigureAwait(false);
         return JsonSerializer.Deserialize<T>(bytes, AppPaths.Json) ?? throw new IOException("Requête invalide.");
     }
     private static uint ServicePid()
@@ -87,10 +87,10 @@ internal static class PipeTransport
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token); timeout.CancelAfter(TimeSpan.FromMinutes(2));
         using var pipe = new NamedPipeClientStream(".", AppPaths.PipeName, PipeDirection.InOut, PipeOptions.Asynchronous, TokenImpersonationLevel.Identification);
-        await pipe.ConnectAsync(3000, timeout.Token);
+        await pipe.ConnectAsync(3000, timeout.Token).ConfigureAwait(false);
         if (!GetNamedPipeServerProcessId(pipe.SafePipeHandle, out var pid) || pid != ServicePid()) throw new UnauthorizedAccessException("Identité du service refusée.");
-        await WriteAsync(pipe, new Request(op, AppPaths.Element(payload ?? new { }), ownerSid), timeout.Token);
-        var response = await ReadAsync<Reply>(pipe, 32 * 1024 * 1024, timeout.Token);
+        await WriteAsync(pipe, new Request(op, AppPaths.Element(payload ?? new { }), ownerSid), timeout.Token).ConfigureAwait(false);
+        var response = await ReadAsync<Reply>(pipe, 32 * 1024 * 1024, timeout.Token).ConfigureAwait(false);
         if (!response.Success) throw new InvalidOperationException(response.Error ?? "Opération refusée.");
         return response.Data;
     }

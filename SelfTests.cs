@@ -26,6 +26,9 @@ internal static class SelfTests
         Check(AccountStore.Unprotect(account) == password, "DPAPI");
         var serialized = JsonSerializer.Serialize(account.Public(), AppPaths.Json); Check(!serialized.Contains(password) && !serialized.Contains(account.ProtectedPassword), "configuration publique");
         TestHello();
+        Passkeys.PasskeyTests.Run();
+        TransportTests.Run();
+        ApplicationTests.Run();
         using (var transfer = RSA.Create(2048)) {
             var publicKey = Convert.ToBase64String(transfer.ExportSubjectPublicKeyInfo());
             var envelope = SealedSecret.Encrypt(password, publicKey);
@@ -40,7 +43,7 @@ internal static class SelfTests
         using var stream = new MemoryStream(); PipeTransport.WriteAsync(stream, new Request("status", AppPaths.Element(new { })), CancellationToken.None).GetAwaiter().GetResult();
         stream.Position = 0; Check(PipeTransport.ReadAsync<Request>(stream, 1024, CancellationToken.None).GetAwaiter().GetResult().Op == "status", "trame IPC");
         using var bad = new MemoryStream(new byte[] { 255, 255, 255, 127 }); Reject(() => PipeTransport.ReadAsync<Request>(bad, 1024, CancellationToken.None).GetAwaiter().GetResult(), "taille IPC");
-        Console.WriteLine("OK : délai réglable et désactivable, prolongation, commandes, DPAPI, absence de secret public, signature Hello et trames IPC.");
+        Console.WriteLine("OK : delai, prolongation, commandes, DPAPI, secrets publics absents, signature Hello, IPC et passkeys CTAP/ES256/ABI Windows.");
     }
     private static void TestHello()
     {

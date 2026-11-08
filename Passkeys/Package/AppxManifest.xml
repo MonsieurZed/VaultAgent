@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+ xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+ xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
+ xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+ xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+ IgnorableNamespaces="uap uap10 com rescap">
+  <Identity Name="MonsieurZed.VaultAgent.Passkeys" Publisher="CN=MonsieurZed VaultAgent" Version="2.1.1.0" ProcessorArchitecture="x64" />
+  <Properties>
+    <DisplayName>VaultAgent Passkeys</DisplayName><PublisherDisplayName>MonsieurZed</PublisherDisplayName>
+    <Logo>assets\passkey-store.png</Logo><uap10:AllowExternalContent>true</uap10:AllowExternalContent>
+  </Properties>
+  <Resources><Resource Language="fr-fr" /></Resources>
+  <Dependencies><TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.26100.6725" MaxVersionTested="10.0.26200.9711" /></Dependencies>
+  <Capabilities><rescap:Capability Name="runFullTrust" /><rescap:Capability Name="unvirtualizedResources" /></Capabilities>
+  <Applications>
+    <Application Id="VaultAgent" Executable="VaultAgent.Provider.exe" uap10:TrustLevel="mediumIL" uap10:RuntimeBehavior="win32App">
+      <uap:VisualElements AppListEntry="none" DisplayName="VaultAgent" Description="Passkeys du coffre VaultAgent" BackgroundColor="transparent" Square150x150Logo="assets\passkey-150.png" Square44x44Logo="assets\passkey-44.png" />
+      <Extensions><com:Extension Category="windows.comServer"><com:ComServer>
+        <com:ExeServer Executable="VaultAgent.Provider.exe" Arguments="--passkey-provider" DisplayName="VaultAgent Passkeys">
+          <com:Class Id="58f03e8c-5d54-4d39-b9c3-47aa36d3a1f6" DisplayName="VaultAgent Passkeys" />
+        </com:ExeServer>
+      </com:ComServer></com:Extension></Extensions>
+    </Application>
+  </Applications>
+</Package>

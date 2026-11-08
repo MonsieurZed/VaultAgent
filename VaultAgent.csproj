@@ -9,10 +9,12 @@
     <RollForward>LatestMajor</RollForward>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon Condition="Exists('assets/shield.ico')">assets/shield.ico</ApplicationIcon>
-    <Version>2.0.1</Version>
+    <Version>2.1.1</Version>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Localization/translations.json" LogicalName="VaultAgent.Translations.json" />
     <Compile Remove="installer\**\*.cs" />
+    <Compile Remove="provider\**\*.cs" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
     <PackageReference Include="System.Formats.Cbor" Version="10.0.0" />
@@ -21,5 +23,6 @@
   <ItemGroup>
     <Content Include="agent-tools.mjs" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="assets/shield.svg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Passkeys/Package/register-provider.ps1" TargetPath="passkeys/register-provider.ps1" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -4,6 +4,7 @@ param([switch]$SkipPublish)
 $ErrorActionPreference = 'Stop'
 $distribution = Join-Path $PSScriptRoot 'dist'
 $package = Join-Path $PSScriptRoot 'publish'
+$version = ([xml](Get-Content (Join-Path $PSScriptRoot 'VaultAgent.csproj') -Raw)).Project.PropertyGroup.Version
 New-Item -ItemType Directory -Path $distribution -Force | Out-Null
 if (-not $SkipPublish) {
     & (Join-Path $PSScriptRoot 'prepare-package.ps1') -SelfContained
@@ -25,13 +26,13 @@ foreach ($file in [IO.Directory]::EnumerateFiles($package,'*',[IO.SearchOption]:
     $inputStream = [IO.File]::OpenRead($file)
     try { $hashes[$relative] = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($inputStream)) } finally { $inputStream.Dispose() }
 }
-@{ version='2.0.1'; files=$hashes } | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $package 'package-manifest.json') -Encoding utf8
+@{ version=$version; files=$hashes } | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $package 'package-manifest.json') -Encoding utf8
 $archive = Join-Path $distribution 'payload.zip'
 if (Test-Path -LiteralPath $archive) { Remove-Item -LiteralPath $archive }
 [IO.Compression.ZipFile]::CreateFromDirectory($package,$archive,[IO.Compression.CompressionLevel]::Optimal,$false)
 & dotnet publish (Join-Path $PSScriptRoot 'installer\Setup.csproj') -c Release -r win-x64 --self-contained true -p:RuntimeFrameworkVersion=10.0.14 -o (Join-Path $distribution 'setup-build') --nologo
 if ($LASTEXITCODE -ne 0) { throw "Compilation de l'installateur échouée." }
-$installer = Join-Path $distribution 'VaultAgent-Setup-2.0.1-x64.exe'
+$installer = Join-Path $distribution "VaultAgent-Setup-$version-x64.exe"
 Copy-Item -LiteralPath (Join-Path $distribution 'setup-build\VaultAgent-Setup.exe') -Destination $installer -Force
 $check = Start-Process -FilePath $installer -ArgumentList '--verify-package' -WindowStyle Hidden -Wait -PassThru
 if ($check.ExitCode -ne 0) { throw "Vérification du paquet embarqué échouée." }

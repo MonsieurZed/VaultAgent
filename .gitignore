@@ -8,6 +8,10 @@ runtime/
 dist/
 installer/bin/
 installer/obj/
+provider/bin/
+provider/obj/
 *.log
 install-diagnostic.json
 *.tmp
+
+.passkey-sdk/

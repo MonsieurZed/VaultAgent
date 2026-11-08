@@ -54,8 +54,8 @@ internal static class SetupOperations
             if (service.Status != ServiceControllerStatus.StopPending) service.Stop();
             service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(20));
         }
-        foreach (var child in Process.GetProcessesByName("VaultAgent")) using (child) {
-            try { if (string.Equals(child.MainModule?.FileName, Executable, StringComparison.OrdinalIgnoreCase)) { child.Kill(true); child.WaitForExit(5000); } }
+        foreach (var child in Process.GetProcessesByName("VaultAgent").Concat(Process.GetProcessesByName("VaultAgent.Provider"))) using (child) {
+            try { if (new[] { Executable, Path.Combine(Root, "VaultAgent.Provider.exe") }.Contains(child.MainModule?.FileName, StringComparer.OrdinalIgnoreCase)) { child.Kill(true); child.WaitForExit(5000); } }
             catch (ArgumentException) { }
         }
     }
@@ -85,7 +85,7 @@ internal static class SetupOperations
         Run(sc, "description", Service, "Déverrouillage Windows et remplissage local Bitwarden/Vaultwarden.");
         using (var service = new ServiceController(Service)) { service.Start(); service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(20)); }
         using var registry = Registry.LocalMachine.CreateSubKey(UninstallKey);
-        registry.SetValue("DisplayName", "VaultAgent"); registry.SetValue("DisplayVersion", "2.0.1");
+        registry.SetValue("DisplayName", "VaultAgent"); registry.SetValue("DisplayVersion", typeof(SetupOperations).Assembly.GetName().Version!.ToString(3));
         registry.SetValue("Publisher", "MonsieurZed"); registry.SetValue("InstallLocation", Root);
         registry.SetValue("DisplayIcon", Executable); registry.SetValue("URLInfoAbout", "https://github.com/MonsieurZed/VaultAgent");
         var remove = "\"" + Path.Combine(Environment.SystemDirectory, @"WindowsPowerShell\v1.0\powershell.exe") + "\" -NoProfile -ExecutionPolicy Bypass -File \"" + Path.Combine(Root, @"setup\uninstall.ps1") + "\"";

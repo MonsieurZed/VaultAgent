@@ -59,6 +59,32 @@ Le SSO du fournisseur et le déverrouillage du coffre sont distincts. Le formula
 email/mot de passe maître ; aucun parcours SSO interactif intégré n'est livré.
 L'authentification Hello du service est présente ; un fournisseur Windows des passkeys du coffre ne l'est pas.
 
+## Passkeys Windows : developpement 2.1
+
+Cette branche contient un fournisseur Windows experimental, avec creation ES256 dans le coffre,
+signature locale et choix du compte dans une fenetre native. Chaque operation exige Windows Hello.
+La release publique 2.0.1 et le skill installe ne contiennent pas cette fonction.
+
+La compilation, les tests CTAP/signatures et les conversions des modeles du CLI sont verifies avec
+des donnees factices. Le parcours complet navigateur → Windows → Hello → Vaultwarden reste a valider :
+Hello est indisponible sur le poste de test dans la session RDP actuelle. Aucun support valide des
+passkeys en RDP n'est annonce. Voir [construction, activation et limites](docs/passkeys.md).
+
+## Interface, langues et canaux (2.1.1)
+
+Les parametres distinguent **Compte**, **Securite** et **Application**. Chaque champ explique
+son usage ; le code 2FA et le certificat sont facultatifs, et les options avancees sont repliees.
+Le menu du bouclier **Langue et mises a jour** propose **Francais, English et Espanol**.
+Le choix s'applique aux nouvelles fenetres ; certains diagnostics techniques du service ou de Windows
+conservent leur langue d'origine. Les preferences sont propres au compte Windows, sans acces au coffre.
+
+**Stable** consulte les releases GitHub publiques validees. **Experimental** inclut les preversions.
+La recherche est manuelle ; aucun telechargement ni redemarrage silencieux. Le bouton d'installation
+apparait uniquement pour une version plus recente. Le fichier vient du depot officiel, son SHA256
+est compare au fichier de la meme release, puis l'installateur demande sa validation Windows.
+Ce controle d'integrite n'est pas une signature d'editeur. Changer de canal ne force pas de retour
+a une ancienne version. Un push de sources ne cree pas de release pour ces canaux.
+
 ## Désinstaller
 
 Paramètres Windows → Applications → **VaultAgent** → Désinstaller. Le service, les exécutables et les

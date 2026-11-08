@@ -24,9 +24,16 @@ $expected = Join-Path $env:ProgramFiles 'HomelabVaultAgent'
 $root = [IO.Path]::GetFullPath($expected)
 if ($root -ne $expected -or (Split-Path $root -Parent) -ne $env:ProgramFiles) { throw 'Chemin de désinstallation refusé.' }
 if ((Get-Item -LiteralPath $root).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Dossier lié refusé.' }
+$providerRemoval = Join-Path $root 'passkeys\register-provider.ps1'
+if ((Test-Path -LiteralPath $providerRemoval) -and (Get-AppxPackage -Name 'MonsieurZed.VaultAgent.Passkeys')) {
+    $provider = Start-Process -FilePath (Join-Path $root 'VaultAgent.Provider.exe') -ArgumentList '--passkeys-unregister' -WindowStyle Hidden -Wait -PassThru
+    if ($provider.ExitCode -ne 0) { throw 'Retrait du fournisseur Windows echoue ; fichiers conserves.' }
+    & $providerRemoval -Uninstall
+    if ($LASTEXITCODE -ne 0) { throw 'Retrait de l identite Windows echoue ; fichiers conserves.' }
+}
 $service = Get-Service HomelabVaultAgent -ErrorAction SilentlyContinue
 if ($service -and $service.Status -ne 'Stopped') { Stop-Service HomelabVaultAgent -Force; (Get-Service HomelabVaultAgent).WaitForStatus('Stopped',[TimeSpan]::FromSeconds(20)) }
-Get-CimInstance Win32_Process -Filter "Name='VaultAgent.exe'" | Where-Object { $_.ExecutablePath -eq (Join-Path $root 'VaultAgent.exe') } | ForEach-Object {
+Get-CimInstance Win32_Process -Filter "Name='VaultAgent.exe' OR Name='VaultAgent.Provider.exe'" | Where-Object { $_.ExecutablePath -in @((Join-Path $root 'VaultAgent.exe'),(Join-Path $root 'VaultAgent.Provider.exe')) } | ForEach-Object {
     $candidateId = $_.ProcessId
     try { $child = [Diagnostics.Process]::GetProcessById($candidateId); try { $child.Kill($true); $child.WaitForExit(5000) | Out-Null } finally { $child.Dispose() } }
     catch { if(Get-Process -Id $candidateId -ErrorAction SilentlyContinue){throw} }

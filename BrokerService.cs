@@ -56,6 +56,23 @@ internal sealed class BrokerService : ServiceBase
                 stage = "dispatch";
                 object response;
                 switch (request.Op) {
+                    case "passkey-metadata":
+                        if (!ProcessIdentity.IsPasskeyProvider((int)caller.ProcessId)) throw new UnauthorizedAccessException("Fournisseur Windows protégé requis.");
+                        response = await account.PasskeyMetadataAsync(caller, timeout.Token); break;
+                    case "passkey-inspect":
+                        if (!ProcessIdentity.IsPasskeyProvider((int)caller.ProcessId)) throw new UnauthorizedAccessException("Fournisseur Windows protégé requis.");
+                        response = account.InspectPasskey(request.Payload.Deserialize<Passkeys.SignedPasskeyRequest>(AppPaths.Json) ?? throw new ArgumentException("Requête de passkey invalide.")); break;
+                    case "passkey-register":
+                        if (!ProcessIdentity.IsPasskeyProvider((int)caller.ProcessId)) throw new UnauthorizedAccessException("Composant protégé de passkeys requis.");
+                        account.RegisterPasskeyProvider(request.Payload.Deserialize<Passkeys.ProviderPublicKeys>(AppPaths.Json) ?? throw new ArgumentException("Clés publiques invalides.")); response = new { registered = true }; break;
+                    case "passkey-begin":
+                        if (!ProcessIdentity.IsPasskeyProvider((int)caller.ProcessId)) throw new UnauthorizedAccessException("Composant protégé de passkeys requis.");
+                        response = await account.BeginPasskeyAsync(request.Payload.Deserialize<Passkeys.SignedPasskeyRequest>(AppPaths.Json) ?? throw new ArgumentException("Requête de passkey invalide."), caller, timeout.Token); break;
+                    case "passkey-complete":
+                        if (!ProcessIdentity.IsPasskeyProvider((int)caller.ProcessId)) throw new UnauthorizedAccessException("Composant protégé de passkeys requis.");
+                        response = await account.CompletePasskeyAsync(request.Payload.Deserialize<Passkeys.PasskeyCommit>(AppPaths.Json) ?? throw new ArgumentException("Validation de passkey invalide."), caller, timeout.Token); break;
+                    case "passkey-cancel":
+                        account.CancelPasskey(request.Payload.GetProperty("jobId").GetString()!, caller); response = new { cancelled = true }; break;
                     case "status": response = account.Status(); break;
                     case "settings": response = account.PublicSettings(); break;
                     case "lock": account.Lock(); response = new { unlocked = false }; break;

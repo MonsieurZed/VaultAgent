@@ -93,6 +93,24 @@ async function main() {
             await call("POST", "/unlock", { password: request.password });
           }
           data = { unlocked: true };
+        } else if (request.op === "passkey-list") {
+          stage = "passkeys";
+          const result = await call("GET", "/list/object/items");
+          data = result.data.flatMap((item: any) => (item.login?.fido2Credentials || [])
+            .filter((credential: any) => !request.rpId || credential.rpId === request.rpId)
+            .map((credential: any) => ({ itemId: item.id, credential: { ...credential,
+              counter: String(credential.counter ?? "0"), discoverable: String(credential.discoverable ?? "false") } })));
+        } else if (request.op === "passkey-create") {
+          stage = "passkeys";
+          const credential = request.credential;
+          const item = await call("POST", "/object/item", { type: 1,
+            name: `${credential.rpName || credential.rpId} — ${credential.userName || "Passkey"}`,
+            login: { username: credential.userName, password: null, totp: null,
+              uris: [{ uri: "https://" + credential.rpId, match: null }], fido2Credentials: [credential] } });
+          const saved = await call("GET", "/object/item/" + item.id);
+          const value = saved.login?.fido2Credentials?.find((entry: any) => entry.credentialId === credential.credentialId);
+          if (!value || value.keyValue !== credential.keyValue || value.rpId !== credential.rpId) throw new Error("passkey-storage");
+          data = { id: item.id, verified: true };
         } else if (request.op === "call") {
           if (request.path.startsWith("/unlock")) throw new Error("reserved");
           data = await call(request.method, request.path, request.body);

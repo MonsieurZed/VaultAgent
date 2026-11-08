@@ -19,3 +19,8 @@ Le code des algorithmes de chiffrement et de dérivation reste celui des composa
 
 Node.js et le runtime Microsoft .NET embarqués conservent leurs propres licences. Les dépendances
 NuGet et npm conservent leurs mentions. VaultAgent n'est pas un produit officiel Bitwarden.
+
+Les declarations COM et WebAuthn du fournisseur Windows suivent les interfaces publiques Microsoft
+et l'exemple PasskeyManager : https://github.com/microsoft/webauthn et
+https://github.com/microsoft/Windows-classic-samples/tree/main/Samples/PasskeyManager.
+Leur licence MIT est conservee dans `Passkeys/MICROSOFT-LICENSE.txt` et le paquet distribue.

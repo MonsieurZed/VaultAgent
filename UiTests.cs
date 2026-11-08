@@ -5,16 +5,36 @@ namespace Homelab.Vault;
 
 internal static class UiTests
 {
-    [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr window);
-    public static void Render(string path)
+    public static void RenderPreferences(string path, string language)
     {
-        using var form = new AccountForm(preview: true);
-        using var timer = new System.Windows.Forms.Timer { Interval = 400 };
+        UiText.PreviewLanguage = language;
+        using var form = new ApplicationSettingsForm { Opacity = 0, ShowInTaskbar = false };
+        using var timer = new System.Windows.Forms.Timer { Interval = 300 };
+        timer.Tick += (_, _) => { timer.Stop(); using var bitmap = new Bitmap(form.Width, form.Height); form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size)); bitmap.Save(path); form.Close(); };
+        form.Shown += (_, _) => timer.Start(); Application.Run(form);
+    }
+    [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr window);
+    public static void RenderPasskeys(string path)
+    {
+        using var form = new Passkeys.PasskeySettingsForm();
+        form.ShowInTaskbar = false; form.Opacity = 0;
+        using var timer = new System.Windows.Forms.Timer { Interval = 300 };
         timer.Tick += (_, _) => {
             timer.Stop(); using var bitmap = new Bitmap(form.Width, form.Height);
             form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size)); bitmap.Save(path); form.Close();
         };
         form.Shown += (_, _) => timer.Start(); Application.Run(form);
+    }
+    public static void Render(string path, int tab = 0)
+    {
+        using var form = new AccountForm(preview: true);
+        form.Opacity = 0; form.ShowInTaskbar = false;
+        using var timer = new System.Windows.Forms.Timer { Interval = 400 };
+        timer.Tick += (_, _) => {
+            timer.Stop(); using var bitmap = new Bitmap(form.Width, form.Height);
+            form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size)); bitmap.Save(path); form.Close();
+        };
+        form.Shown += (_, _) => { form.Controls.OfType<TabControl>().Single().SelectedIndex = tab; timer.Start(); }; Application.Run(form);
     }
     public static void Input(string receipt)
     {

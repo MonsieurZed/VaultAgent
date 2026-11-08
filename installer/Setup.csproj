@@ -6,9 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>VaultAgent-Setup</AssemblyName>
-    <Version>2.0.1</Version>
+    <Version>2.1.1</Version>
     <ApplicationIcon>../assets/shield.ico</ApplicationIcon>
-    <ApplicationManifest>../app.manifest</ApplicationManifest>
+    <ApplicationManifest>setup.manifest</ApplicationManifest>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
@@ -17,6 +17,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../ShieldIcon.cs" Link="ShieldIcon.cs" />
+    <Compile Include="../UiText.cs" Link="UiText.cs" />
+    <Compile Include="../UserPreferences.cs" Link="UserPreferences.cs" />
+    <EmbeddedResource Include="../Localization/translations.json" LogicalName="VaultAgent.Translations.json" />
     <EmbeddedResource Include="../dist/payload.zip" LogicalName="VaultAgent.Payload.zip" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0" />
   </ItemGroup>
