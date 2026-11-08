@@ -1,0 +1,10 @@
+{
+  "measuredUtc": "2026-11-07T22:38:50.241Z",
+  "operation": "status, empty isolated profile",
+  "baselineMeanMs": 4246,
+  "engineStartupMs": 1453,
+  "warmMeanMs": 0.65,
+  "warmP95Ms": 0.96,
+  "baselineSamples": 3,
+  "warmSamples": 20
+}

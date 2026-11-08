@@ -1,0 +1,13 @@
+# Sources natives et adaptation, aucun état du coffre dans ce dépôt
+bin/
+obj/
+publish/
+runtime/
+.build-deps/
+.upstream/
+dist/
+installer/bin/
+installer/obj/
+*.log
+install-diagnostic.json
+*.tmp
