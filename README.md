@@ -65,6 +65,30 @@ Paramètres Windows → Applications → **VaultAgent** → Désinstaller. Le se
 raccourcis sont retirés. Les comptes protégés et profils chiffrés restent dans ProgramData pour réinstallation.
 Le bouton **Oublier le compte** supprime séparément la configuration protégée après UAC.
 
+## Skill pour Codex et Claude Code
+
+Le [skill vault-agent](skills/vault-agent/SKILL.md) guide le choix d'une fiche et le remplissage
+username/password/TOTP sans faire remonter les valeurs au modèle. Il inclut un petit helper local
+dont les commandes sont limitées à status, catalogue, validation Windows, verrouillage et saisie.
+Le [ZIP du skill](https://github.com/MonsieurZed/VaultAgent/releases/download/v2.0.1/vault-agent-skill.zip)
+est également disponible pour copier son dossier `vault-agent` dans le répertoire de skills de l'agent.
+
+Depuis un clone du dépôt, sans élévation :
+
+```powershell
+./install-agent-skill.ps1 -Agent Both
+```
+
+Codex : `$vault-agent`, installé dans `~/.agents/skills/vault-agent`.
+Claude Code : `/vault-agent`, installé dans `~/.claude/skills/vault-agent`.
+Un seul agent peut être sélectionné avec `-Agent Codex` ou `-Agent Claude`.
+Pour retirer les fichiers installés inchangés : `./install-agent-skill.ps1 -Agent Both -Uninstall`.
+Le script refuse d'écraser un skill existant. Si la découverte ne se rafraîchit pas, rouvrir la session.
+
+Ce skill suppose un outil capable d'exécuter les commandes sur le PC Windows, dans la session de
+l'utilisateur. Il n'installe pas de MCP ni d'accès distant. Une session Claude/Codex dans le cloud
+ne gagne pas l'accès au service Windows en installant simplement ces instructions.
+
 ## Construire
 
 Windows x64, SDK .NET 9, Node 22, npm, git et PowerShell 7 pour les scripts de construction :

@@ -1,0 +1,4 @@
+interface:
+  display_name: "VaultAgent"
+  short_description: "Remplir les connexions sans afficher les secrets"
+  default_prompt: "Utilise $vault-agent pour remplir cette connexion sans afficher les identifiants ni les codes."
