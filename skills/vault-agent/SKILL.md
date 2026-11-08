@@ -6,6 +6,11 @@ license: MIT
 
 # VaultAgent
 
+Avec le **client associé au serveur 3**, si le coffre est verrouillé, utiliser la demande
+de déverrouillage décrite dans [references/unlock.md](references/unlock.md). Elle notifie
+Zed et attend sa validation Oui/Non, ou utilise l'autorisation automatique déjà choisie par Zed.
+L'agent ne clique jamais sur l'approbation et ne modifie pas cette politique.
+
 Pour **enregistrer ou gérer des fiches**, utiliser le client associé au serveur Linux
 **3.0.0-preview.2 ou ultérieur** : lire [references/write.md](references/write.md).
 Cette méthode sait créer des connexions, notes sécurisées et dossiers, puis modifier les champs

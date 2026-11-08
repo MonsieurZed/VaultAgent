@@ -4,7 +4,7 @@ import { Writable } from 'node:stream';
 import { mkdir, writeFile, rename } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { defaultConfig, validServer, status, catalog, lock } from './agent-tools.mjs';
+import { defaultConfig, validServer, status, catalog, lock, unlock } from './agent-tools.mjs';
 
 async function pair(address) {
   if (process.platform === 'win32') throw new Error('Use VaultAgent-Client.exe to protect the token with Windows DPAPI');
@@ -21,6 +21,6 @@ async function pair(address) {
 }
 try {
   const [command, argument] = process.argv.slice(2);
-  const result = command === 'pair' ? await pair(argument) : command === 'status' ? await status() : command === 'catalog' ? await catalog(argument) : command === 'lock' ? await lock() : (() => { throw new Error('Commands: pair <https-server>, status, catalog [search], lock'); })();
+  const result = command === 'pair' ? await pair(argument) : command === 'status' ? await status() : command === 'unlock' ? await unlock({ waitSeconds: argument === undefined ? 0 : Number(argument) }) : command === 'catalog' ? await catalog(argument) : command === 'lock' ? await lock() : (() => { throw new Error('Commands: pair <https-server>, status, catalog [search], lock, unlock [wait-seconds]'); })();
   console.log(JSON.stringify(result));
 } catch { console.error('Operation refused. Check pairing, HTTPS address and server authorization.'); process.exitCode = 1; }

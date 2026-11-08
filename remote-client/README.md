@@ -66,3 +66,13 @@ Importer `remote-client/agent-tools.mjs` pour remplir un locator Playwright sur 
 Les clients ne peuvent ni configurer, ni deverrouiller le coffre. L'administrateur l'autorise
 depuis l'interface web, pour la duree configuree. Une revocation verrouille aussi le coffre.
 Les passkeys du fournisseur Windows experimental ne sont pas portees vers Linux dans cette preview.
+## Demander l'ouverture du coffre
+
+`await remote.requestUnlock()` enregistre une demande sans ouvrir le coffre.
+`await remote.unlock({waitSeconds:60})` demande puis attend l'accord ; reprendre seulement
+si `unlocked:true`. Les états `denied`, `failed` et `expired` imposent l'arrêt sans relance.
+Le PC Windows approbateur affiche Oui/Non avec Toujours accepter ; aucun bouton d'approbation
+ne doit être piloté par l'agent. L'acceptation automatique est conservée par client sur Linux
+et fonctionne sans le PC Windows. Elle peut être retirée dans Clients ou par le menu du bouclier.
+Linux : `vaultagent-client unlock [secondes]`. Windows : `VaultAgent-Client.exe request-unlock`.
+Ces commandes ne prolongent pas la session ; les demandes expirent après cinq minutes.

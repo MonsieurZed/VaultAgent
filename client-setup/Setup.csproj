@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType><TargetFramework>net9.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><AssemblyName>VaultAgent-Client-Setup</AssemblyName>
-    <RootNamespace>Homelab.Vault.ClientSetup</RootNamespace><Version>3.0.0-preview.2</Version>
+    <RootNamespace>Homelab.Vault.ClientSetup</RootNamespace><Version>3.0.0-preview.3</Version>
     <ApplicationManifest>../client/client.manifest</ApplicationManifest><ApplicationIcon>../assets/shield.ico</ApplicationIcon>
     <PublishSingleFile>true</PublishSingleFile><IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile><EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>

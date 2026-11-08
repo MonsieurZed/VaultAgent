@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace Homelab.Vault.Remote;
 
 internal sealed record RemoteSettings(string Server, string ProtectedToken);
-internal static class RemoteConnection
+internal static partial class RemoteConnection
 {
     public const string DefaultServer = "https://vaultagent.lan.zed.cx";
     private static string FileName => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VaultAgent", "remote-client.json");
@@ -41,7 +41,7 @@ internal static class RemoteConnection
         } finally { CryptographicOperations.ZeroMemory(token); }
     }
     public static async Task<JsonElement> CallAsync(string operation, object payload) {
-        if (operation is not ("status" or "catalog" or "seal" or "lock" or "write" or "write-preview")) throw new ArgumentException("Operation distante refusee.");
+        if (operation is not ("status" or "catalog" or "seal" or "lock" or "write" or "write-preview" or "request-unlock" or "decide-unlock" or "approval-context")) throw new ArgumentException("Operation distante refusee.");
         var settings = Read(); var token = ProtectedData.Unprotect(Convert.FromBase64String(settings.ProtectedToken), Entropy, DataProtectionScope.CurrentUser);
         try { return await SendAsync(settings.Server, "/api/agent/" + operation, payload, Encoding.UTF8.GetString(token)); }
         finally { CryptographicOperations.ZeroMemory(token); }

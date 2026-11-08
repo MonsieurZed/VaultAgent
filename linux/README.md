@@ -1,4 +1,30 @@
-# Serveur Linux et clients — 3.0.0-preview.2
+# Serveur Linux et clients — 3.0.0-preview.3
+
+## Demandes de déverrouillage
+
+Un client associé peut appeler `requestUnlock()` ou `unlock({waitSeconds:60})` du helper.
+Dans Clients, le propriétaire peut cocher « Toujours accepter les demandes de ce client ».
+Ce réglage persiste sur Linux : le client autorisé demande l'ouverture sans dépendre de Windows.
+Le délai reste actif ; la prochaine demande autorisée rouvre le coffre après expiration.
+Décocher cette option retire cette autorisation. Une erreur 2FA n'est jamais contournée.
+
+Pour une confirmation manuelle, le PC Windows approbateur montre une petite notification
+Oui/Non, avec une case Toujours accepter. Aucun navigateur ni UAC à chaque demande.
+L'accord ouvre le coffre pour les clients associés selon le délai existant. Le menu du bouclier
+permet de désactiver toutes les acceptations automatiques. Le portail Authentik reste une voie de secours.
+
+Installer un PC approbateur : `VaultAgent-Client.exe approval-public-key` retourne seulement
+son UUID et sa clé publique. Côté administration du serveur arrêté, transmettre ce JSON à
+`node linux/register-approver.mjs` avec les données montées sous `/data`, puis redémarrer.
+Ne pas exposer cette commande administrative comme route de client. Les décisions sont signées
+RSA-PSS, liées à une demande aléatoire et expirante ; le client ordinaire ne peut pas approuver.
+La clé privée est protégée par DPAPI utilisateur Windows. Cela protège le flux normal, pas
+un programme malveillant exécuté avec les droits de ce même utilisateur ou de l'administrateur.
+
+Une demande dure cinq minutes, est dédupliquée par appareil et n'allonge pas la session.
+Un refus est consommé jusqu'à expiration. Une révocation, un verrouillage ou un changement
+de compte invalide les anciennes demandes. Les demandes restent en mémoire et disparaissent
+au redémarrage. Le helper attend au plus 300 secondes, puis renvoie un état sans relancer.
 
 La preview.2 ajoute l'écriture dédiée sans lecture pour les clients associés : création de
 connexions, notes sécurisées et dossiers, prévisualisation des métadonnées et édition ciblée.

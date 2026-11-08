@@ -10,6 +10,10 @@ internal static class RemoteCommands
             } return 0;
             case "settings": ApplicationConfiguration.Initialize(); Application.Run(new RemoteClientForm(initialServer: args.Length > 1 ? args[1] : null)); return 0;
             case "status": Print(RemoteConnection.CallAsync("status", new { }).GetAwaiter().GetResult()); return 0;
+            case "approval-public-key": Print(RemoteConnection.ApprovalIdentity()); return 0;
+            case "request-unlock":
+                Print(RemoteConnection.CallAsync("request-unlock", new { }).GetAwaiter().GetResult());
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Environment.ProcessPath!, "tray") { UseShellExecute = true, WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden }); return 0;
             case "lock": Print(RemoteConnection.CallAsync("lock", new { }).GetAwaiter().GetResult()); return 0;
             case "catalog": Print(RemoteConnection.CallAsync("catalog", new { search = args.Length > 1 ? args[1] : "" }).GetAwaiter().GetResult()); return 0;
             case "write" when args.Length == 1:
@@ -18,7 +22,7 @@ internal static class RemoteCommands
             case "write-preview" when args.Length == 1: Print(RemoteConnection.CallAsync("write-preview", new { }).GetAwaiter().GetResult()); return 0;
             case "seal" when args.Length == 5: Print(RemoteConnection.CallAsync("seal", new { itemId = args[1], field = args[2], publicKey = args[3], origin = args[4] }).GetAwaiter().GetResult()); return 0;
             case "type" when args.Length == 4: Print(RemoteConnection.TypeAsync(args[1], args[2], args[3]).GetAwaiter().GetResult()); return 0;
-            default: throw new ArgumentException("Commandes : settings, status, catalog, lock, seal, type, write-preview, write (JSON sur stdin).");
+            default: throw new ArgumentException("Commandes : settings, status, request-unlock, catalog, lock, seal, type, write-preview, write (JSON sur stdin).");
         }
     }
     private static void Print(object value) => Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(value, AppPaths.Json));

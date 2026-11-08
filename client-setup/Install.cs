@@ -18,7 +18,7 @@ internal static class Install
             else if (run.GetValue("VaultAgentClient") is string value && value.Contains(Exe, StringComparison.OrdinalIgnoreCase)) run.DeleteValue("VaultAgentClient", false);
         }
         using (var key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\VaultAgentClient")) {
-            key.SetValue("DisplayName", "VaultAgent Client"); key.SetValue("DisplayVersion", "3.0.0-preview.2"); key.SetValue("Publisher", "MonsieurZed"); key.SetValue("InstallLocation", Root); key.SetValue("DisplayIcon", Exe);
+            key.SetValue("DisplayName", "VaultAgent Client"); key.SetValue("DisplayVersion", "3.0.0-preview.3"); key.SetValue("Publisher", "MonsieurZed"); key.SetValue("InstallLocation", Root); key.SetValue("DisplayIcon", Exe);
             var script = Path.Combine(Root, "uninstall.ps1");
             key.SetValue("UninstallString", "\"" + Path.Combine(Environment.SystemDirectory, @"WindowsPowerShell\v1.0\powershell.exe") + "\" -NoProfile -ExecutionPolicy Bypass -File \"" + script + "\"");
             key.SetValue("NoModify", 1); key.SetValue("NoRepair", 1);

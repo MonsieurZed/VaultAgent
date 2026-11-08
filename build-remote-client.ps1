@@ -8,7 +8,7 @@ if (Test-Path (Join-Path $output 'VaultAgent.exe')) { throw 'Le client portable 
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'remote-client\agent-tools.mjs') -Destination (Join-Path $output 'remote-agent-tools.mjs') -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'remote-client\README.md') -Destination $output -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'LICENSE') -Destination $output -Force
-$archive = Join-Path $PSScriptRoot 'dist\VaultAgent-Windows-Client-3.0.0-preview.2-x64.zip'
+$archive = Join-Path $PSScriptRoot 'dist\VaultAgent-Windows-Client-3.0.0-preview.3-x64.zip'
 if (Test-Path -LiteralPath $archive) { Remove-Item -LiteralPath $archive }
 [IO.Compression.ZipFile]::CreateFromDirectory($output,$archive,[IO.Compression.CompressionLevel]::Optimal,$false)
 $hash = (Get-FileHash -LiteralPath $archive).Hash.ToLowerInvariant()

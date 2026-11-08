@@ -17,6 +17,8 @@ test('helper distant : HTTPS verifie, remplissage factice et retour sans valeur 
   const server = createServer({ key: await readFile(join(directory, 'test.key')), cert: await readFile(join(directory, 'test.crt')) }, async (request, response) => {
     assert.equal(request.headers.authorization, 'Bearer ' + fakeToken); let body = ''; for await (const part of request) body += part;
     const data = JSON.parse(body);
+    if (request.url === '/api/agent/request-unlock') { response.end(JSON.stringify({ requestId: 'test-request', state: 'pending' })); return; }
+    if (request.url === '/api/agent/status') { response.end(JSON.stringify({ unlocked: false, unlockRequest: { requestId: 'test-request', state: 'denied' } })); return; }
     if (request.url === '/api/agent/write') {
       assert.equal(data.action, 'create'); assert.equal(data.item.login.password, password); assert.equal(data.item.name, 'Exemple factice');
       response.setHeader('content-type', 'application/json'); response.end(JSON.stringify({ verified: true, id: '00000000-0000-4000-8000-000000000001' })); return;
@@ -26,7 +28,8 @@ test('helper distant : HTTPS verifie, remplissage factice et retour sans valeur 
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve)); t.after(() => new Promise(resolve => server.close(resolve)));
   const file = join(directory, 'client.json'); await writeFile(file, JSON.stringify({ server: 'https://127.0.0.1:' + server.address().port, token: fakeToken }), { mode: 0o600 });
-  const script = `import {fillBrowser,saveFromSource} from ${JSON.stringify(new URL('../../remote-client/agent-tools.mjs', import.meta.url).href)};
+  const script = `import {fillBrowser,saveFromSource,unlock} from ${JSON.stringify(new URL('../../remote-client/agent-tools.mjs', import.meta.url).href)};
+const approval=await unlock({waitSeconds:5,configFile:${JSON.stringify(file)}});if(approval.state!=='denied'||approval.unlocked!==false)throw Error('refusal-not-respected');
 let filled=false;const result=await fillBrowser({locator:{fill:async value=>{if(value!==${JSON.stringify(password)})throw new Error('fake-fill-mismatch');filled=true;}},itemId:'00000000-0000-4000-8000-000000000001',field:'password',origin:'https://example.test',configFile:${JSON.stringify(file)}});
 if(!filled)throw new Error('not-filled');
 const saved=await saveFromSource({operationId:'00000000-0000-4000-8000-000000000002',action:'create',metadata:{type:1,name:'Exemple factice'},source:async()=>({password:${JSON.stringify(password)}}),configFile:${JSON.stringify(file)}});

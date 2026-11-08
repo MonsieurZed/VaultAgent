@@ -20,7 +20,7 @@ async function native(args, executable = join(root, 'VaultAgent-Client.exe'), pa
   });
 }
 export async function request(operation, payload = {}, options = {}) {
-  if (!['status', 'catalog', 'lock', 'seal', 'write', 'write-preview'].includes(operation)) throw new Error('Operation refused');
+  if (!['status', 'catalog', 'lock', 'seal', 'write', 'write-preview', 'request-unlock'].includes(operation)) throw new Error('Operation refused');
   if (process.platform === 'win32' && !options.configFile) {
     const args = operation === 'catalog' ? ['catalog', payload.search || ''] : operation === 'seal' ? ['seal', payload.itemId, payload.field, payload.publicKey, payload.origin] : operation === 'write-preview' ? payload.itemId ? ['write-preview', payload.itemId] : ['write-preview'] : [operation];
     return native(args, options.executable, operation === 'write' ? payload : undefined);
@@ -33,6 +33,25 @@ export async function request(operation, payload = {}, options = {}) {
   const text = await response.text(); if (text.length > 4 * 1024 * 1024) throw new Error('Invalid response size'); return JSON.parse(text);
 }
 export const status = options => request('status', {}, options);
+export const requestUnlock = options => request('request-unlock', {}, options);
+// Attente explicite et bornée ; jamais de nouvelle demande après refus ou expiration.
+export async function unlock({ waitSeconds = 0, signal, ...options } = {}) {
+  if (!Number.isInteger(waitSeconds) || waitSeconds < 0 || waitSeconds > 300) throw new Error('Invalid wait duration');
+  signal?.throwIfAborted();
+  const result = await requestUnlock(options);
+  if (result.unlocked || waitSeconds === 0 || !['pending', 'approving'].includes(result.state)) return result;
+  const deadline = Date.now() + waitSeconds * 1000;
+  while (Date.now() < deadline) {
+    signal?.throwIfAborted();
+    await new Promise(resolve => setTimeout(resolve, Math.min(2000, deadline - Date.now())));
+    signal?.throwIfAborted(); const current = await status(options);
+    const approval = current.unlockRequest;
+    if (approval && approval.requestId === result.requestId && ['denied', 'failed'].includes(approval.state)) return { ...approval, unlocked: false };
+    if (current.unlocked) return { requestId: result.requestId, state: 'unlocked', unlocked: true };
+    if (!approval || approval.requestId !== result.requestId) return { requestId: result.requestId, state: 'expired', unlocked: false };
+  }
+  return { ...result, state: 'waiting', unlocked: false };
+}
 export const catalog = (search = '', options) => request('catalog', { search }, options);
 export const lock = options => request('lock', {}, options);
 export const writePreview = (itemId, options) => request('write-preview', { itemId }, options);

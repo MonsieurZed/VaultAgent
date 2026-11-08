@@ -1,6 +1,11 @@
 /* Aucune valeur de coffre n'est chargee dans cette interface apres enregistrement. */
 const $ = id => document.getElementById(id);
 const translations = {
+  'Demandes de déverrouillage': ['Unlock requests', 'Solicitudes de desbloqueo'],
+  'Votre accord ouvre le coffre aux clients associés pour le délai configuré. Code 2FA ci-dessus si nécessaire.': ['Approval opens the vault to paired clients for the configured timeout. Enter 2FA above if needed.', 'La aprobación abre la bóveda a los clientes asociados durante el plazo configurado. Introduce 2FA arriba si hace falta.'],
+  'Autoriser cette demande': ['Approve this request', 'Aceptar esta solicitud'],
+  'Refuser': ['Deny', 'Rechazar'],
+  'Toujours accepter les demandes de ce client': ['Always accept requests from this client', 'Aceptar siempre solicitudes de este cliente'],
   'À quoi sert un client ?': ['What is a client for?', '¿Para qué sirve un cliente?'],
   'Ce n’est pas un autre compte du coffre : c’est le petit programme qui remplit les champs là où votre agent travaille.': ['It is not another vault account: it is the small program that fills fields wherever your agent works.', 'No es otra cuenta de la bóveda: es el pequeño programa que rellena campos donde trabaja tu agente.'],
   'Installer sur l’appareil utilisé par l’agent': ['Install on the device used by the agent', 'Instalar en el equipo que usa el agente'],
@@ -56,12 +61,33 @@ async function api(path, data) {
   return response.json();
 }
 function display(state) {
+  $('unlock-requests').hidden = !(state.unlockRequests || []).length;
+  $('request-list').replaceChildren();
+  for (const request of state.unlockRequests || []) {
+    const row = document.createElement('div'); row.className = 'device';
+    const label = document.createElement('strong'); label.textContent = request.deviceName;
+    row.append(label);
+    for (const approve of [true, false]) {
+      const button = document.createElement('button'); button.textContent = t(approve ? 'Autoriser cette demande' : 'Refuser');
+      if (!approve) button.className = 'quiet';
+      button.addEventListener('click', () => action(button, async () => {
+        try { await api('decide-unlock', { requestId: request.requestId, approve, code: approve ? $('unlock-code').value : undefined }); }
+        finally { $('unlock-code').value = ''; }
+      })); row.append(button);
+    }
+    $('request-list').append(row);
+  }
   snapshot = state; $('state').textContent = t(!state.configured ? 'À configurer' : state.unlocked ? 'Coffre disponible pour les clients' : 'Coffre verrouillé');
   $('dot').textContent = state.unlocked ? '● ' : '○ '; $('expiration').textContent = state.unlocked ? state.expiresUtc ? new Date(state.expiresUtc).toLocaleTimeString(language) : t('Délai désactivé') : '';
   $('unlock').disabled = !state.configured; $('lock').disabled = !state.unlocked;
   $('devices').replaceChildren();
   for (const device of state.devices) {
     const row = document.createElement('div'); row.className = 'device'; const info = document.createElement('div'); const name = document.createElement('strong'); name.textContent = device.name; const date = document.createElement('small'); date.textContent = new Date(device.created).toLocaleString(language); info.append(name, date);
+    const automatic = document.createElement('label'); automatic.className = 'check';
+    const check = document.createElement('input'); check.type = 'checkbox'; check.checked = !!device.autoUnlock;
+    const caption = document.createElement('span'); caption.textContent = t('Toujours accepter les demandes de ce client');
+    check.addEventListener('change', () => action(check, () => api('auto-unlock', { deviceId: device.id, enabled: check.checked })));
+    automatic.append(check, caption); info.append(automatic);
     const revoke = document.createElement('button'); revoke.className = 'quiet'; revoke.textContent = t('Révoquer'); revoke.addEventListener('click', () => action(revoke, () => api('revoke', { deviceId: device.id }))); row.append(info, revoke); $('devices').append(row);
   }
   if (!state.devices.length) { const empty = document.createElement('p'); empty.textContent = t('Aucun client associé.'); $('devices').append(empty); }
@@ -78,4 +104,4 @@ $('lock').addEventListener('click', () => action($('lock'), () => api('lock', {}
 $('pair-form').addEventListener('submit', event => { event.preventDefault(); action(event.submitter, async () => { const value = await api('pairing', { name: $('device-name').value }); $('pair-code').value = value.code; $('pairing').hidden = false; $('show-pair').checked = false; $('pair-code').type = 'password'; setTimeout(() => { $('pair-code').value = ''; $('pairing').hidden = true; }, value.expiresInSeconds * 1000); }); });
 $('show-pair').addEventListener('change', () => $('pair-code').type = $('show-pair').checked ? 'text' : 'password');
 localize(); refresh(true).catch(error => $('message').textContent = t(error.message));
-setInterval(() => refresh().catch(() => {}), 10000);
+setInterval(() => refresh().catch(() => {}), 5000);

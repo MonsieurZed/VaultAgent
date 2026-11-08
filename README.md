@@ -2,7 +2,7 @@
 
 ## Preversion 3 : serveur Linux et client Windows
 
-**[Telecharger la preversion 3.0.0-preview.2](https://github.com/MonsieurZed/VaultAgent/releases/tag/v3.0.0-preview.2)**
+**[Telecharger la preversion 3.0.0-preview.3](https://github.com/MonsieurZed/VaultAgent/releases/tag/v3.0.0-preview.3)**
 
 - Serveur Linux : moteur persistant, interface web FR/EN/ES, session a delai glissant et clients revocables.
 - Windows : installateur utilisateur, bouclier en arriere-plan et demarrage automatique ; le coffre reste sur Linux.
@@ -16,6 +16,12 @@ Les passkeys Windows experimentales ne sont pas portees sur Linux dans cette pre
 
 Guides : [serveur Linux](linux/README.md), [clients](remote-client/README.md).
 La version stable 2.0.1 reste disponible pour le mode Windows autonome.
+
+La preversion 3.0.0-preview.3 permet a l'agent de demander le deverrouillage : petite notification
+Windows Oui/Non et option Toujours accepter par client, memorisee sur le serveur Linux.
+Les clients autorises en automatique peuvent rouvrir le coffre sans PC Windows. Les confirmations
+manuelles sont signees par un PC approbateur enregistre ; aucune UAC distante.
+Voir le [guide de demande](skills/vault-agent/references/unlock.md).
 
 La preversion 3.0.0-preview.2 ajoute la sauvegarde et la gestion des fiches sans retour des
 secrets au modele : creation de connexions et notes securisees, modification ciblee, dossiers,

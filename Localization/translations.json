@@ -1,4 +1,13 @@
 {
+  "Autoriser l'accès au coffre ?": ["Allow access to the vault?", "¿Permitir acceso a la bóveda?"],
+  "Toujours accepter les demandes de ce client": ["Always accept requests from this client", "Aceptar siempre solicitudes de este cliente"],
+  "Désactiver l'acceptation automatique": ["Disable automatic acceptance", "Desactivar aceptación automática"],
+  "Acceptation automatique désactivée": ["Automatic acceptance disabled", "Aceptación automática desactivada"],
+  "Demande expirée ou opération refusée": ["Request expired or operation refused", "Solicitud caducada u operación rechazada"],
+  "Oui": ["Yes", "Sí"],
+  "Non": ["No", "No"],
+  "Demande de déverrouillage": ["Unlock request", "Solicitud de desbloqueo"],
+  "Demande de déverrouillage. Cliquez pour accepter ou refuser dans le portail.": ["Unlock requested. Click to approve or deny in the portal.", "Se solicita desbloquear. Haz clic para aceptar o rechazar en el portal."],
   "Exemple : https://vaultagent.example.com": ["Example: https://vaultagent.example.com", "Ejemplo: https://vaultagent.example.com"],
   "Ouvrir le serveur VaultAgent": ["Open VaultAgent server", "Abrir el servidor VaultAgent"],
   "Client à associer": ["Client pairing required", "Cliente pendiente de asociación"],

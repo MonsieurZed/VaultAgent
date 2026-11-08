@@ -18,7 +18,7 @@ directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 exec "$directory/node" "$directory/remote-client/cli.mjs" "$@"
 SCRIPT
 chmod 755 "$stage/vaultagent-client"
-archive=VaultAgent-Linux-Client-3.0.0-preview.2.tar.gz
+archive=VaultAgent-Linux-Client-3.0.0-preview.3.tar.gz
 tar -czf "$destination/$archive" -C "$stage" node LICENSE-NODE.txt vaultagent-client remote-client
 (cd "$destination" && sha256sum "$archive" > "$archive.sha256")
 echo 'LINUX_CLIENT_PACKAGED; runtime-included; no-private-data'

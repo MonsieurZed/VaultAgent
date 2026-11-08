@@ -3,7 +3,13 @@ import { digest, same } from './store.mjs';
 
 export class Devices {
   constructor(store, clock = () => Date.now()) { this.store = store; this.clock = clock; this.pairings = new Map(); this.attempts = []; this.tail = Promise.resolve(); }
-  list() { return this.store.devices.filter(value => value.profile === this.store.account?.profile).map(({ id, name, created }) => ({ id, name, created })); }
+  list() { return this.store.devices.filter(value => value.profile === this.store.account?.profile).map(({ id, name, created, autoUnlock }) => ({ id, name, created, autoUnlock: !!autoUnlock })); }
+  record(id) { return this.store.devices.find(value => value.id === id && value.profile === this.store.account?.profile); }
+  async setAutomatic(id, enabled) {
+    if (typeof enabled !== 'boolean' || !this.record(id)) throw new Error('invalid-device');
+    await this.store.updateDevices(current => current.map(value => value.id === id && value.profile === this.store.account?.profile ? { ...value, autoUnlock: enabled } : value));
+  }
+  async clearAutomatic() { await this.store.updateDevices(current => current.map(value => ({ ...value, autoUnlock: false }))); }
   issue(name) {
     if (typeof name !== 'string' || !name.trim() || name.length > 80) throw new Error('invalid-device');
     for (const [id, entry] of this.pairings) if (entry.expires < this.clock()) this.pairings.delete(id);

@@ -4,8 +4,9 @@ Le client Windows associé est installé dans `%LOCALAPPDATA%\Programs\VaultAgen
 Importer son `remote-agent-tools.mjs` dans un runtime Node local. Sous Linux, importer
 `remote-client/agent-tools.mjs` du TAR installé et utiliser le Node inclus si nécessaire.
 Ne pas lire le fichier d'association, le jeton, les profils du coffre ou les secrets locaux.
-Vérifier `status()` ; si le coffre est verrouillé, laisser Zed autoriser les clients depuis
-l'interface du serveur. Ne pas changer son timeout ni utiliser le service autonome pour contourner.
+Vérifier `status()` ; si le coffre est verrouillé, utiliser [la demande de déverrouillage](unlock.md)
+avec le client 3.0.0-preview.3 ou ultérieur. Laisser Zed approuver ; sur une version antérieure,
+il doit autoriser les clients dans l'interface. Ne pas changer son timeout ni contourner par le service autonome.
 
 ## Choix de la fiche et de l'opération
 
