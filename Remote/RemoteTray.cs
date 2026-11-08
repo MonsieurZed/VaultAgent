@@ -16,16 +16,17 @@ internal sealed class RemoteTray : ApplicationContext
         var menu = new ContextMenuStrip(); menu.Items.Add(state);
         var portal = menu.Items.Add(UiText.T("Ouvrir le serveur VaultAgent")); portal.Click += (_, _) => { if (string.IsNullOrEmpty(RemoteConnection.ConfiguredServer)) Configure(); else Process.Start(new ProcessStartInfo(Server) { UseShellExecute = true }); };
         var settings = menu.Items.Add(UiText.T("Associer ce client")); settings.Click += (_, _) => Configure();
-        var lockItem = menu.Items.Add(UiText.T("Verrouiller maintenant")); lockItem.Click += async (_, _) => { try { await RemoteConnection.CallAsync("lock", new { }); await Refresh(); } catch { state.Text = UiText.T("Service du coffre indisponible"); } };
+        var lockItem = menu.Items.Add(UiText.T("Verrouiller maintenant")); lockItem.Click += async (_, _) => { try { await ForVaults(id => RemoteConnection.CallAsync("lock", new { }, id)); await Refresh(); } catch { state.Text = UiText.T("Service du coffre indisponible"); } };
         menu.Items.Add(new ToolStripSeparator()); var exit = menu.Items.Add(UiText.T("Quitter")); exit.Click += (_, _) => ExitThread();
         icon.ContextMenuStrip = menu; icon.DoubleClick += (_, _) => Configure();
         var requests = new ToolStripMenuItem(UiText.T("Demande de déverrouillage"));
         requests.Click += (_, _) => OpenRequest(); menu.Items.Insert(1, requests);
         var reset = menu.Items.Add(UiText.T("Désactiver l'acceptation automatique"));
-        reset.Click += async (_, _) => { try { await RemoteConnection.ResetAutomaticAsync(); icon.ShowBalloonTip(5000, "VaultAgent", UiText.T("Acceptation automatique désactivée"), ToolTipIcon.Info); } catch { state.Text = UiText.T("Service du coffre indisponible"); } };
+        reset.Click += async (_, _) => { try { await ForVaults(RemoteConnection.ResetAutomaticAsync); icon.ShowBalloonTip(5000, "VaultAgent", UiText.T("Acceptation automatique désactivée"), ToolTipIcon.Info); } catch { state.Text = UiText.T("Service du coffre indisponible"); } };
         timer.Tick += async (_, _) => await Refresh(); timer.Start(); _ = Refresh();
     }
     private static string Server => string.IsNullOrEmpty(RemoteConnection.ConfiguredServer) ? RemoteConnection.DefaultServer : RemoteConnection.ConfiguredServer;
+    private static async Task ForVaults(Func<string, Task> action) { var vaults = await RemoteConnection.CallAsync("vaults", new { }); foreach (var vault in vaults.EnumerateArray()) await action(vault.GetProperty("id").GetString()!); }
     private void OpenRequest() {
         if (approval is not null) { approval.Activate(); return; }
         if (lastRequest is not { } request || request.GetProperty("expiresUtc").GetDateTimeOffset() <= DateTimeOffset.UtcNow) return;
@@ -37,17 +38,23 @@ internal sealed class RemoteTray : ApplicationContext
         if (busy) return; busy = true;
         try {
             if (string.IsNullOrEmpty(RemoteConnection.ConfiguredServer)) { state.Text = UiText.T("Client à associer"); return; }
-            var status = await RemoteConnection.CallAsync("status", new { });
+            var vaults = await RemoteConnection.CallAsync("vaults", new { });
+            var requests = new List<System.Text.Json.JsonElement>(); var unlocked = 0; var total = 0;
+            foreach (var vault in vaults.EnumerateArray()) {
+                var status = await RemoteConnection.CallAsync("status", new { }, vault.GetProperty("id").GetString());
+                ++total; if (status.GetProperty("unlocked").GetBoolean()) ++unlocked;
+                if (status.TryGetProperty("approvalRequests", out var pending)) requests.AddRange(pending.EnumerateArray().Select(value => value.Clone()));
+            }
             lastRequest = null;
-            if (status.TryGetProperty("approvalRequests", out var pending) && pending.ValueKind == System.Text.Json.JsonValueKind.Array) {
-                var ids = pending.EnumerateArray().Select(request => request.GetProperty("requestId").GetString()!).ToHashSet();
+            {
+                var ids = requests.Select(request => request.GetProperty("requestId").GetString()!).ToHashSet();
                 notified.IntersectWith(ids);
-                foreach (var request in pending.EnumerateArray()) {
+                foreach (var request in requests) {
                     lastRequest = request.Clone();
                     if (approval is null && notified.Add(request.GetProperty("requestId").GetString()!)) { OpenRequest(); break; }
                 }
             }
-            state.Text = UiText.T(status.GetProperty("unlocked").GetBoolean() ? "Coffre disponible pour les clients" : "Coffre verrouillé"); icon.Text = state.Text.Length > 63 ? state.Text[..63] : state.Text;
+            state.Text = (total > 1 ? $"{unlocked}/{total} · " : "") + UiText.T(unlocked > 0 ? "Coffre disponible pour les clients" : "Coffre verrouillé"); icon.Text = state.Text.Length > 63 ? state.Text[..63] : state.Text;
         } catch { state.Text = UiText.T("Service du coffre indisponible"); }
         finally { busy = false; }
     }

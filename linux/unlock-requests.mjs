@@ -1,16 +1,16 @@
 /* Un client demande ; seule la session administrateur Authentik peut approuver. */
 import { randomUUID, randomBytes, createPublicKey, verify, constants } from 'node:crypto';
-export const decisionMessage = (origin, requestId, challenge, approve, remember) => JSON.stringify(['VaultAgent.Unlock.v1', origin, requestId, challenge, approve, remember]);
+export const decisionMessage = (origin, requestId, challenge, approve, remember, vaultId = 'default') => JSON.stringify(['VaultAgent.Unlock.v2', origin, vaultId, requestId, challenge, approve, remember]);
 
 export class UnlockRequests {
-  constructor(session, devices, clock = () => Date.now()) { this.session = session; this.devices = devices; this.clock = clock; this.entries = new Map(); this.contexts = new Map(); }
+  constructor(session, devices, clock = () => Date.now(), vaultId = 'default') { this.session = session; this.devices = devices; this.clock = clock; this.vaultId = vaultId; this.entries = new Map(); this.contexts = new Map(); }
   valid(entry) {
     this.session.status();
     return entry && entry.expires > this.clock() && entry.generation === this.session.generation &&
       entry.profile === this.session.store.account?.profile && this.devices.list().some(device => device.id === entry.deviceId);
   }
   prune() { for (const [id, entry] of this.entries) if (!this.valid(entry)) this.entries.delete(id); }
-  public(entry) { return { requestId: entry.id, state: entry.state, expiresUtc: new Date(entry.expires).toISOString() }; }
+  public(entry) { return { vaultId: this.vaultId, requestId: entry.id, state: entry.state, expiresUtc: new Date(entry.expires).toISOString() }; }
   current(deviceId) { this.prune(); const entry = this.entries.get(deviceId); return entry ? this.public(entry) : null; }
   async request(deviceId) {
     this.prune();
@@ -41,7 +41,7 @@ export class UnlockRequests {
   context(deviceId) {
     if (!this.devices.record(deviceId)?.approverPublicKey) throw new Error('approver-required');
     const entry = { requestId: 'reset-auto', challenge: randomBytes(32).toString('base64'), expires: this.clock() + 60000 };
-    this.contexts.set(deviceId, entry); return { requestId: entry.requestId, challenge: entry.challenge };
+    this.contexts.set(deviceId, entry); return { vaultId: this.vaultId, requestId: entry.requestId, challenge: entry.challenge };
   }
   async signedDecision(deviceId, input, origin) {
     const key = this.devices.record(deviceId)?.approverPublicKey;
@@ -51,7 +51,7 @@ export class UnlockRequests {
     const entry = reset ? this.contexts.get(deviceId) : [...this.entries.values()].find(value => value.id === input.requestId && value.state === 'pending');
     if (!entry || entry.expires <= this.clock()) throw new Error('request-expired');
     const publicKey = createPublicKey({ key: Buffer.from(key, 'base64'), type: 'spki', format: 'der' });
-    if (!verify('sha256', Buffer.from(decisionMessage(origin, input.requestId, entry.challenge, input.approve, input.remember)), { key: publicKey, padding: constants.RSA_PKCS1_PSS_PADDING, saltLength: 32 }, Buffer.from(input.signature, 'base64'))) throw new Error('approval-refused');
+    if (!verify('sha256', Buffer.from(decisionMessage(origin, input.requestId, entry.challenge, input.approve, input.remember, this.vaultId)), { key: publicKey, padding: constants.RSA_PKCS1_PSS_PADDING, saltLength: 32 }, Buffer.from(input.signature, 'base64'))) throw new Error('approval-refused');
     if (reset) { this.contexts.delete(deviceId); await this.devices.clearAutomatic(); return { automaticAcceptance: false }; }
     const result = await this.decide(input.requestId, input.approve);
     if (input.approve && input.remember) await this.devices.setAutomatic(entry.deviceId, true);

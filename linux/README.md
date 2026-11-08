@@ -1,4 +1,37 @@
-# Serveur Linux et clients — 3.0.0-preview.3
+# Serveur Linux et clients — 3.0.0-preview.4
+
+## Plusieurs comptes et fiches communes
+
+Ajouter un coffre dans le sélecteur, puis configurer son serveur et son compte séparément.
+Le coffre existant reste sous l'identifiant `default`, avec son compte, ses clients, sa clé et
+son profil conservés. Les nouveaux coffres utilisent `vaults/<UUID>/`. Aucun secret n'est
+déplacé ou partagé par l'ajout d'un coffre. Huit comptes maximum ; un moteur par coffre ouvert.
+Un même compte/serveur ne peut pas être configuré dans deux coffres.
+
+Associer un nouveau client dans le coffre choisi, ou autoriser explicitement un client déjà
+associé depuis Clients. Cela ne reprend pas son acceptation automatique : la politique est
+indépendante pour chaque coffre. La révocation et le changement de compte sont locaux au coffre.
+Le registre `vaults.json` ne contient que des UUID et des noms ; chaque stockage privé conserve
+ses comptes, hachages clients, reçus et clé. Aucun accès entre coffres n'est donné par défaut.
+
+L'onglet Fiches partagées crée des connexions et notes dans une collection native, édite leurs
+champs sans charger les secrets existants, crée des collections et prévisualise le transfert
+d'une fiche personnelle. Ce transfert change sa propriété : elle appartient ensuite à
+l'organisation. Il exige la révision et une confirmation ; il ne duplique pas la fiche.
+Les fiches avec pièces jointes ne sont pas transférées par cet outil. Aucun partage public ni
+copie automatique entre deux serveurs indépendants n'est proposé.
+
+Créer l'organisation, inviter/confirmer les deux comptes et attribuer leur accès à une collection
+dans Vaultwarden. Le compte Agent peut rester membre ordinaire avec droit d'édition de cette
+collection ; il n'a pas besoin du rôle administrateur. Les membres et rôles se gèrent dans
+Vaultwarden ; les invitations doivent être autorisées pour ajouter un membre.
+Le service VaultAgent reste administré par son propriétaire
+Authentik ; il ne fournit pas une isolation d'hébergement multi-tenant contre cet administrateur.
+
+Le SDK vérifie les permissions de collection et d'édition. Les lectures synchronisent le coffre
+et effacent son cache déchiffré après synchronisation ; une modification ou révocation externe
+est prise en compte avant de servir une fiche. Les reçus ne contiennent aucune valeur secrète.
+Guide agent : [sélection et partage](../skills/vault-agent/references/multi-vault.md).
 
 ## Demandes de déverrouillage
 
@@ -39,7 +72,8 @@ aux contrôles de révision du SDK/serveur ; le verrou de sérialisation ne couv
 Serveur deploye sur Maison : https://vaultagent.lan.zed.cx. Authentik protege
 l'administration et l'association des clients utilise un code unique valable cinq minutes.
 La session du moteur est persistante, avec delai glissant configurable ou desactivable.
-Tout redemarrage reverrouille le coffre. Les clients ne peuvent ni ouvrir ni configurer le coffre.
+Tout redemarrage reverrouille les coffres. Les clients peuvent demander une ouverture selon
+la politique approuvee ; ils ne peuvent pas configurer les comptes ou leurs propres droits.
 
 Le client Windows est un ZIP portable, sans service ni installation administrateur.
 Lancer VaultAgent-Client.exe et saisir l'URL du serveur puis le code cree dans l'onglet Clients.

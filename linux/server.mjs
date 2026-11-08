@@ -2,8 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Store } from './store.mjs';
 import { Engine } from './engine.mjs';
-import { Session } from './session.mjs';
-import { Devices } from './devices.mjs';
+import { Vaults } from './vaults.mjs';
 import { createApp } from './http.mjs';
 
 process.umask(0o077);
@@ -14,8 +13,8 @@ if (!origin || new URL(origin).protocol !== 'https:' || new URL(origin).origin !
 const trustedProxy = process.env.VAULTAGENT_TRUSTED_PROXY;
 if (!trustedProxy || !process.env.VAULTAGENT_OWNER) throw new Error('Trusted proxy and owner required');
 const store = await new Store(directory).init();
-const session = new Session(store, profile => new Engine(directory, join(root, '../runtime/engine/bw.js')).start(profile));
-const server = createApp({ session, devices: new Devices(store), origin, owner: process.env.VAULTAGENT_OWNER, trustedProxy, webDirectory: join(root, 'web'), downloadsDirectory: process.env.VAULTAGENT_DOWNLOADS });
-const timer = setInterval(() => session.expire(), 500); timer.unref();
+const vaults = await new Vaults(store, (directory, profile) => new Engine(directory, join(root, '../runtime/engine/bw.js')).start(profile)).init();
+const server = createApp({ vaults, origin, owner: process.env.VAULTAGENT_OWNER, trustedProxy, webDirectory: join(root, 'web'), downloadsDirectory: process.env.VAULTAGENT_DOWNLOADS });
+const timer = setInterval(() => vaults.expire(), 500); timer.unref();
 server.listen(8080, '0.0.0.0', () => process.stdout.write('VaultAgent Linux ready; vault locked\n'));
-for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { session.lock(); server.close(); clearInterval(timer); setTimeout(() => process.exit(), 1000).unref(); });
+for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { vaults.lock(); server.close(); clearInterval(timer); setTimeout(() => process.exit(), 1000).unref(); });

@@ -11,9 +11,12 @@ il doit autoriser les clients dans l'interface. Ne pas changer son timeout ni co
 ## Choix de la fiche et de l'opération
 
 `writePreview()` renvoie seulement les dossiers et les métadonnées des connexions et notes
-personnelles actives. `writePreview(itemId)` renvoie `{id,name,type,folderId,revisionDate}`.
+actives, personnelles ou communes. Avec preview.4, choisir d'abord `vaultId` selon le
+[guide multi-coffre](multi-vault.md). `writePreview(itemId,scope)` renvoie notamment
+`{id,name,type,folderId,revisionDate,organizationId,collectionIds}`.
 Vérifier la cible avec l'utilisateur et conserver la révision exacte avant une modification.
-Une fiche partagée, archivée ou supprimée est refusée. Aucun effacement ni fusion n'est proposé.
+Une fiche archivée ou supprimée est refusée. Une fiche commune exige son `organizationId`
+explicite pour l'édition et les droits natifs de la collection. Aucun effacement ni fusion n'est proposé.
 
 Créer une UUID publique `operationId` avant chaque opération et la conserver avec le reçu.
 Réutiliser exactement cette UUID et la même requête lors d'une répétition ; une UUID réutilisée

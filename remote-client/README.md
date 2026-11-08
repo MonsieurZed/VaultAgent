@@ -76,3 +76,13 @@ ne doit être piloté par l'agent. L'acceptation automatique est conservée par 
 et fonctionne sans le PC Windows. Elle peut être retirée dans Clients ou par le menu du bouclier.
 Linux : `vaultagent-client unlock [secondes]`. Windows : `VaultAgent-Client.exe request-unlock`.
 Ces commandes ne prolongent pas la session ; les demandes expirent après cinq minutes.
+## Sélection du coffre — preview.4
+
+`await remote.vaults()` retourne seulement les coffres autorisés. Passer `{vaultId:'UUID'}`
+aux fonctions `status`, `catalog`, `writePreview`, `sharing`, `share` et `createFolder`, ou
+`vaultId` dans `saveFromSource`, `fillBrowser`, `typeWindows`, `unlock`.
+Si le client accède à plusieurs coffres, aucune sélection implicite n'est acceptée.
+CLI : `vaults`, puis `status --vault UUID`, `catalog nom --vault UUID`, `sharing --vault UUID`.
+Le bouclier surveille les coffres autorisés, et indique le nom du coffre dans la confirmation.
+Les transferts natifs entre compte personnel et organisation utilisent `share` avec prévisualisation,
+révision et confirmation du changement de propriété. Lire le guide du skill avant d'appliquer.

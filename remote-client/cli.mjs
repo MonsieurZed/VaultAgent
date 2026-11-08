@@ -4,7 +4,7 @@ import { Writable } from 'node:stream';
 import { mkdir, writeFile, rename } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { defaultConfig, validServer, status, catalog, lock, unlock } from './agent-tools.mjs';
+import { defaultConfig, validServer, status, catalog, lock, unlock, vaults, sharing } from './agent-tools.mjs';
 
 async function pair(address) {
   if (process.platform === 'win32') throw new Error('Use VaultAgent-Client.exe to protect the token with Windows DPAPI');
@@ -20,7 +20,9 @@ async function pair(address) {
   return { paired: true };
 }
 try {
-  const [command, argument] = process.argv.slice(2);
-  const result = command === 'pair' ? await pair(argument) : command === 'status' ? await status() : command === 'unlock' ? await unlock({ waitSeconds: argument === undefined ? 0 : Number(argument) }) : command === 'catalog' ? await catalog(argument) : command === 'lock' ? await lock() : (() => { throw new Error('Commands: pair <https-server>, status, catalog [search], lock, unlock [wait-seconds]'); })();
+  const args = process.argv.slice(2); const flag = args.indexOf('--vault'); const options = {};
+  if (flag >= 0) { if (!args[flag + 1]) throw new Error('Vault required'); options.vaultId = args[flag + 1]; args.splice(flag, 2); }
+  const [command, argument] = args;
+  const result = command === 'pair' ? await pair(argument) : command === 'vaults' ? await vaults(options) : command === 'sharing' ? await sharing(options) : command === 'status' ? await status(options) : command === 'unlock' ? await unlock({ ...options, waitSeconds: argument === undefined ? 0 : Number(argument) }) : command === 'catalog' ? await catalog(argument, options) : command === 'lock' ? await lock(options) : (() => { throw new Error('Commands: pair <https-server>, vaults, sharing, status, catalog [search], lock, unlock [wait-seconds]; --vault <id>'); })();
   console.log(JSON.stringify(result));
 } catch { console.error('Operation refused. Check pairing, HTTPS address and server authorization.'); process.exitCode = 1; }

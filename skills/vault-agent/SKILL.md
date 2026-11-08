@@ -1,10 +1,15 @@
 ---
 name: vault-agent
-description: Remplir des identifiants et TOTP ou enregistrer et gérer des fiches avec VaultAgent sans renvoyer les secrets au modèle. Utiliser avec le client Windows/Linux associé ou le service Windows autonome installé.
+description: Remplir et gérer des identifiants, TOTP et fiches partagées avec VaultAgent sans renvoyer les secrets au modèle. Utiliser avec plusieurs coffres/comptes via le client Windows/Linux associé, ou pour le remplissage via le service Windows autonome.
 license: MIT
 ---
 
 # VaultAgent
+
+Avec le serveur **3.0.0-preview.4 ou ultérieur**, commencer par `vaults()` et choisir le coffre
+autorisé correspondant à la demande. Lire [references/multi-vault.md](references/multi-vault.md)
+pour la sélection explicite et les fiches communes Admin/Agent. Ne jamais substituer un coffre
+plus privilégié à celui demandé pour contourner un refus.
 
 Avec le **client associé au serveur 3**, si le coffre est verrouillé, utiliser la demande
 de déverrouillage décrite dans [references/unlock.md](references/unlock.md). Elle notifie

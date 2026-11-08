@@ -56,6 +56,7 @@ async function main() {
     await route(ctx, async () => {});
     const result = ctx.body as { success: boolean; data?: any };
     if (!result?.success) throw new Error("operation");
+    if (method === "POST" && path === "/sync") await c.cipherService.clearCache();
     return result.data?.object === "template" ? result.data.template : result.data;
   }
   write({ ready: true, version: "2026.10.1-agent.2" });
@@ -116,15 +117,26 @@ async function main() {
           const value = saved.login?.fido2Credentials?.find((entry: any) => entry.credentialId === credential.credentialId);
           if (!value || value.keyValue !== credential.keyValue || value.rpId !== credential.rpId) throw new Error("passkey-storage");
           data = { id: item.id, verified: true };
+        } else if (request.op === "sharing-info" || request.op === "sharing-check") {
+          stage = "sharing";
+          const userId = await firstValueFrom(c.accountService.activeAccount$.pipe(getUserId));
+          const organizations = await firstValueFrom(c.organizationService.organizations$(userId));
+          const collections = await firstValueFrom(c.collectionService.decryptedCollections$(userId));
+          const active = organizations.filter((org: any) => org.enabled && org.status === 2);
+          if (request.op === "sharing-check") {
+            const org = active.find((org: any) => org.id === request.organizationId);
+            if (!org || !Array.isArray(request.collectionIds) || !request.collectionIds.length || request.collectionIds.some((id: string) => !collections.some((collection: any) => collection.id === id && collection.organizationId === org.id && collection.canEditItems(org)))) throw new Error("refused");
+            data = { allowed: true };
+          } else data = active.map((org: any) => ({ id: org.id, name: org.name, role: org.type, collections: collections.filter((collection: any) => collection.organizationId === org.id).map((collection: any) => ({ id: collection.id, name: collection.name, canEdit: collection.canEditItems(org) })) }));
         } else if (request.op === "safe-update") {
           stage = "write";
           const userId = await firstValueFrom(c.accountService.activeAccount$.pipe(getUserId));
           const cipher = await c.cipherService.get(request.itemId, userId);
           if (!cipher || !await firstValueFrom(c.cipherAuthorizationService.canEditCipher$(cipher))) throw new Error("refused");
-          if (await firstValueFrom(c.policyService.policyAppliesToUser$(PolicyType.OrganizationDataOwnership, userId))) throw new Error("refused");
+          if (!cipher.organizationId && await firstValueFrom(c.policyService.policyAppliesToUser$(PolicyType.OrganizationDataOwnership, userId))) throw new Error("refused");
           const original = await c.cipherService.decrypt(cipher, userId);
           const view = CipherView.fromJSON(JSON.parse(JSON.stringify(original)))!;
-          applyWritePatch(view, request.expectedRevisionDate, request.patch);
+          applyWritePatch(view, request.expectedRevisionDate, request.patch, request.organizationId ?? null);
           await c.cipherService.updateWithServer(view, userId, original);
           data = { id: request.itemId };
         } else if (request.op === "call") {

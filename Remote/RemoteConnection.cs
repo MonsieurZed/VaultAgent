@@ -7,8 +7,11 @@ using System.Text.Json;
 namespace Homelab.Vault.Remote;
 
 internal sealed record RemoteSettings(string Server, string ProtectedToken);
+internal sealed class RemoteRequestException(string code) : Exception(code) { public string Code { get; } = code; }
 internal static partial class RemoteConnection
 {
+    private static readonly AsyncLocal<string?> VaultContext = new();
+    public static string? TargetVault { get => VaultContext.Value; set => VaultContext.Value = value; }
     public const string DefaultServer = "https://vaultagent.lan.zed.cx";
     private static string FileName => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VaultAgent", "remote-client.json");
     private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("VaultAgent.Remote.v1");
@@ -24,7 +27,14 @@ internal static partial class RemoteConnection
         if (token != null) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         request.Content = new StringContent(JsonSerializer.Serialize(payload, AppPaths.Json), Encoding.UTF8, "application/json");
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-        if (!response.IsSuccessStatusCode) throw new InvalidOperationException(response.StatusCode == (System.Net.HttpStatusCode)423 ? "Coffre verrouille : autoriser les clients dans l interface du serveur." : "Serveur VaultAgent : requete refusee ou client revoque.");
+        if (!response.IsSuccessStatusCode) {
+            if ((int)response.StatusCode == 423) throw new RemoteRequestException("locked");
+            if ((int)response.StatusCode == 400) {
+                try { await using var errorStream = await response.Content.ReadAsStreamAsync(); var errorBytes = new byte[512]; var errorCount = 0; int errorRead; while (errorCount < errorBytes.Length && (errorRead = await errorStream.ReadAsync(errorBytes.AsMemory(errorCount))) > 0) errorCount += errorRead; using var error = JsonDocument.Parse(errorBytes.AsMemory(0, errorCount)); if (error.RootElement.TryGetProperty("error", out var value) && value.GetString() == "vault-required") throw new RemoteRequestException("vault-required"); }
+                catch (JsonException) { }
+            }
+            throw new RemoteRequestException("request-refused");
+        }
         await using var stream = await response.Content.ReadAsStreamAsync(); using var buffer = new MemoryStream();
         var block = new byte[8192]; int count;
         while ((count = await stream.ReadAsync(block)) != 0) { if (buffer.Length + count > 4 * 1024 * 1024) throw new IOException("Reponse trop volumineuse."); buffer.Write(block, 0, count); }
@@ -40,10 +50,16 @@ internal static partial class RemoteConnection
             await File.WriteAllTextAsync(temporary, JsonSerializer.Serialize(new RemoteSettings(server, Convert.ToBase64String(encrypted)), AppPaths.Json)); File.Move(temporary, FileName, true);
         } finally { CryptographicOperations.ZeroMemory(token); }
     }
-    public static async Task<JsonElement> CallAsync(string operation, object payload) {
-        if (operation is not ("status" or "catalog" or "seal" or "lock" or "write" or "write-preview" or "request-unlock" or "decide-unlock" or "approval-context")) throw new ArgumentException("Operation distante refusee.");
+    public static async Task<JsonElement> CallAsync(string operation, object payload, string? vaultId = null) {
+        if (operation is not ("vaults" or "sharing" or "share" or "status" or "catalog" or "seal" or "lock" or "write" or "write-preview" or "request-unlock" or "decide-unlock" or "approval-context")) throw new ArgumentException("Operation distante refusee.");
+        var body = System.Text.Json.JsonSerializer.SerializeToNode(payload, AppPaths.Json) as System.Text.Json.Nodes.JsonObject ?? throw new ArgumentException("Requete invalide.");
+        var target = vaultId ?? TargetVault;
+        if (target is not null) {
+            if (body["vaultId"] is { } existing && existing.GetValue<string>() != target) throw new ArgumentException("Coffre ambigu.");
+            body["vaultId"] = target;
+        }
         var settings = Read(); var token = ProtectedData.Unprotect(Convert.FromBase64String(settings.ProtectedToken), Entropy, DataProtectionScope.CurrentUser);
-        try { return await SendAsync(settings.Server, "/api/agent/" + operation, payload, Encoding.UTF8.GetString(token)); }
+        try { return await SendAsync(settings.Server, "/api/agent/" + operation, body, Encoding.UTF8.GetString(token)); }
         finally { CryptographicOperations.ZeroMemory(token); }
     }
     public static async Task<object> TypeAsync(string itemId, string field, string origin) {

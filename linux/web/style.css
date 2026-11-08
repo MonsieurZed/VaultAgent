@@ -3,3 +3,6 @@
 .client-guide{background:#f7f4fc;border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:25px;font-size:14px}.client-guide h3{margin:0 0 9px}.client-guide ol{padding-left:23px}.client-guide li{padding:6px 0}.downloads{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.downloads a{display:inline-block;text-decoration:none;color:var(--purple);background:#fff;border:1px solid var(--line);border-radius:7px;padding:8px 12px}.downloads .checksum{font-size:11px;padding:11px 7px}
 /* Demandes : visibles sans ouvrir les paramètres du compte. */
 .request-panel{border:1px solid #8b5cf6;border-radius:16px;padding:20px;margin-bottom:20px;background:#f5f1ff}.request-panel .device{flex-wrap:wrap;gap:12px}.request-panel strong{flex:1}
+.vault-picker{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin:20px 0}.vault-picker label{flex:1;min-width:170px}.inline-form{display:flex;gap:12px;margin:18px 0}.inline-form input{flex:1}textarea{font:inherit;border:1px solid var(--line);border-radius:8px;padding:12px;max-width:100%}#shared-items{margin:16px 0}
+nav{flex-wrap:wrap}.inline-form{flex-wrap:wrap}.device .check{margin:10px 0;max-width:100%}
+[hidden]{display:none!important}

@@ -30,13 +30,14 @@ internal static partial class RemoteConnection
     internal static async Task DecideAsync(JsonElement request, bool approve, bool remember)
     {
         using var rsa = ApprovalKey(); var server = ValidateServer(Read().Server);
+        var vaultId = request.TryGetProperty("vaultId", out var vault) ? vault.GetString() : "default";
         var requestId = request.GetProperty("requestId").GetString(); var challenge = request.GetProperty("challenge").GetString();
         var options = new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-        var message = JsonSerializer.Serialize(new object?[] { "VaultAgent.Unlock.v1", server, requestId, challenge, approve, remember }, options);
+        var message = JsonSerializer.Serialize(new object?[] { "VaultAgent.Unlock.v2", server, vaultId, requestId, challenge, approve, remember }, options);
         var signature = rsa.SignData(Encoding.UTF8.GetBytes(message), HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
-        await CallAsync("decide-unlock", new { requestId, approve, remember, signature = Convert.ToBase64String(signature) });
+        await CallAsync("decide-unlock", new { requestId, approve, remember, signature = Convert.ToBase64String(signature) }, vaultId);
     }
-    internal static async Task ResetAutomaticAsync() => await DecideAsync(await CallAsync("approval-context", new { }), false, false);
+    internal static async Task ResetAutomaticAsync(string vaultId) => await DecideAsync(await CallAsync("approval-context", new { }, vaultId), false, false);
 }
 
 // Petite carte de notification ; aucun secret du coffre n'est charge dans cette fenetre.
@@ -53,7 +54,7 @@ internal sealed class RemoteApprovalForm : Form
         ClientSize = new Size(420, 210); BackColor = Color.FromArgb(249, 246, 255);
         var area = Screen.PrimaryScreen!.WorkingArea; Location = new Point(area.Right - Width - 20, area.Bottom - Height - 20);
         var title = new Label { Text = UiText.T("Autoriser l'accès au coffre ?"), Left = 20, Top = 18, Width = 380, Height = 28, Font = new Font("Segoe UI", 13, FontStyle.Bold) };
-        var name = new Label { Text = request.GetProperty("deviceName").GetString(), Left = 20, Top = 55, Width = 380, Height = 35, AutoEllipsis = true };
+        var name = new Label { Text = (request.TryGetProperty("vaultName", out var vaultName) ? vaultName.GetString() + " · " : "") + request.GetProperty("deviceName").GetString(), Left = 20, Top = 55, Width = 380, Height = 35, AutoEllipsis = true };
         var always = new CheckBox { Text = UiText.T("Toujours accepter les demandes de ce client"), Left = 20, Top = 100, Width = 380, Height = 28 };
         var yes = new Button { Text = UiText.T("Oui"), Left = 200, Top = 155, Width = 90, Height = 34, BackColor = Color.FromArgb(112, 65, 199), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
         var no = new Button { Text = UiText.T("Non"), Left = 300, Top = 155, Width = 90, Height = 34 };

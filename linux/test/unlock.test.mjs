@@ -73,6 +73,7 @@ test('signature du PC approbateur, accord mémorisé sur Linux, désactivation e
   const payload = { requestId: pending.requestId, approve: true, remember: true };
   const signed = (id, nonce, approve, remember) => sign('sha256', Buffer.from(decisionMessage(origin, id, nonce, approve, remember)), { key: privateKey, padding: constants.RSA_PKCS1_PSS_PADDING, saltLength: 32 }).toString('base64');
   payload.signature = signed(payload.requestId, challenge, true, true);
+  f.queue.vaultId = 'other-vault'; await assert.rejects(f.queue.signedDecision('device-b', payload, origin), /approval-refused/); f.queue.vaultId = 'default';
   await assert.rejects(f.queue.signedDecision('device-a', payload, origin), /approver-required/);
   await assert.rejects(f.queue.signedDecision('device-b', { ...payload, approve: false }, origin), /approval-refused/);
   await f.queue.signedDecision('device-b', payload, origin);

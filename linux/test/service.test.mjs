@@ -20,6 +20,7 @@ async function fixture(t) {
     const engine = { alive: true, kill() { this.alive = false; }, async request(request) {
       if (request.op === 'prepare') return { restartRequired: false };
       if (request.op === 'connect') { assert.equal(request.password, fictitious); return { unlocked: true }; }
+      if (request.path === '/sync') return {};
       if (request.path.startsWith('/list/')) return { data: [structuredClone(item)] };
       if (request.path.startsWith('/object/item/')) { if (delay) await delay; return structuredClone(item); }
       if (request.path.startsWith('/object/totp/')) return { data: '123456' };

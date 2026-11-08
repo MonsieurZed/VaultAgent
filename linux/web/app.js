@@ -1,6 +1,29 @@
 /* Aucune valeur de coffre n'est chargee dans cette interface apres enregistrement. */
 const $ = id => document.getElementById(id);
 const translations = {
+  'Coffre': ['Vault', 'Bóveda'], 'Nom du coffre': ['Vault name', 'Nombre de la bóveda'],
+  'Renommer': ['Rename', 'Renombrar'], 'Ajouter un coffre': ['Add a vault', 'Añadir una bóveda'],
+  'Nouveau coffre': ['New vault', 'Nueva bóveda'], 'Fiches partagées': ['Shared items', 'Elementos compartidos'],
+  'Autoriser ce client sur ce coffre': ['Allow this client on this vault', 'Permitir este cliente en esta bóveda'],
+  'Les deux comptes doivent appartenir à la même organisation Vaultwarden, sur le même serveur. Une seule fiche est partagée ; les rôles et membres se gèrent dans Vaultwarden.': ['Both accounts must belong to the same Vaultwarden organization on the same server. One item is shared; manage roles and members in Vaultwarden.', 'Ambas cuentas deben pertenecer a la misma organización Vaultwarden en el mismo servidor. Se comparte un solo elemento; gestiona roles y miembros en Vaultwarden.'],
+  'Charger les espaces partagés': ['Load shared spaces', 'Cargar espacios compartidos'],
+  'Organisation': ['Organization', 'Organización'], 'Collection': ['Collection', 'Colección'],
+  'Créer une collection': ['Create a collection', 'Crear una colección'],
+  'Créer ou modifier une fiche commune': ['Create or edit a shared item', 'Crear o editar un elemento compartido'],
+  'Nouvelle fiche': ['New item', 'Nuevo elemento'], 'Titre': ['Title', 'Título'], 'Type': ['Type', 'Tipo'],
+  'Identifiant': ['Username', 'Usuario'], 'Note sécurisée': ['Secure note', 'Nota segura'],
+  'Connexion': ['Login', 'Inicio de sesión'],
+  'Adresse HTTPS': ['HTTPS address', 'Dirección HTTPS'], 'Mot de passe': ['Password', 'Contraseña'],
+  'Graine TOTP facultative': ['Optional TOTP seed', 'Semilla TOTP opcional'], 'Notes': ['Notes', 'Notas'],
+  'En modification, laisser un champ secret vide conserve sa valeur. Les valeurs enregistrées ne sont jamais affichées.': ['When editing, leave a secret field blank to keep its value. Stored values are never displayed.', 'Al editar, deja un campo secreto vacío para conservar su valor. Nunca se muestran los valores guardados.'],
+  'Enregistrer la fiche partagée': ['Save shared item', 'Guardar elemento compartido'],
+  'Partager une fiche personnelle existante': ['Share an existing personal item', 'Compartir un elemento personal existente'],
+  'Fiche': ['Item', 'Elemento'], 'Prévisualiser le partage': ['Preview sharing', 'Vista previa del uso compartido'],
+  'Je transfère cette fiche à l’organisation et aux membres autorisés de la collection.': ['I transfer this item to the organization and authorized collection members.', 'Transfiero este elemento a la organización y a los miembros autorizados de la colección.'],
+  'Partager cette fiche': ['Share this item', 'Compartir este elemento'], 'Modifier': ['Edit', 'Editar'], 'Lecture seule': ['Read only', 'Solo lectura'],
+  'Ce compte est déjà configuré dans un autre coffre.': ['This account is already configured in another vault.', 'Esta cuenta ya está configurada en otra bóveda.'],
+  'Créez une organisation dans Vaultwarden, invitez le second compte, puis attribuez la même collection aux deux membres.': ['Create an organization in Vaultwarden, invite the second account, then assign the same collection to both members.', 'Crea una organización en Vaultwarden, invita a la segunda cuenta y asigna la misma colección a ambos miembros.'],
+  'Ouvrir Vaultwarden': ['Open Vaultwarden', 'Abrir Vaultwarden'],
   'Demandes de déverrouillage': ['Unlock requests', 'Solicitudes de desbloqueo'],
   'Votre accord ouvre le coffre aux clients associés pour le délai configuré. Code 2FA ci-dessus si nécessaire.': ['Approval opens the vault to paired clients for the configured timeout. Enter 2FA above if needed.', 'La aprobación abre la bóveda a los clientes asociados durante el plazo configurado. Introduce 2FA arriba si hace falta.'],
   'Autoriser cette demande': ['Approve this request', 'Aceptar esta solicitud'],
@@ -50,17 +73,26 @@ const translations = {
   'Connexion refusée. Vérifiez le mot de passe maître du coffre et le code 2FA éventuel.': ['Sign-in refused. Check the vault master password and 2FA code if required.', 'Inicio de sesión rechazado. Comprueba la contraseña maestra de la bóveda y el código 2FA si se requiere.'],
   'Authentification expirée. Rechargez la page pour vous reconnecter.': ['Authentication expired. Reload to sign in again.', 'Autenticación caducada. Recarga la página para volver a entrar.']
 };
-let language = localStorage.getItem('vaultagent-language') || 'fr'; let snapshot;
+let language = localStorage.getItem('vaultagent-language') || 'fr'; let snapshot; let selectedVault = 'default'; let sharedUI = { localize() {}, reset() {} };
 const t = source => language === 'fr' ? source : translations[source]?.[language === 'es' ? 1 : 0] || source;
-function localize() { document.documentElement.lang = language; document.querySelectorAll('[data-t]').forEach(element => element.textContent = t(element.dataset.t)); if (snapshot) display(snapshot); }
+function localize() { document.documentElement.lang = language; document.querySelectorAll('[data-t]').forEach(element => element.textContent = t(element.dataset.t)); if (snapshot) display(snapshot); sharedUI.localize(); }
 $('language').value = language; $('language').addEventListener('change', event => { language = event.target.value; localStorage.setItem('vaultagent-language', language); localize(); });
 document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => { document.querySelectorAll('[data-tab]').forEach(other => other.classList.toggle('selected', other === button)); document.querySelectorAll('.tab').forEach(tab => tab.hidden = tab.id !== button.dataset.tab); }));
-async function api(path, data) {
-  const response = await fetch('/api/admin/' + path, { method: data === undefined ? 'GET' : 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, ...(data === undefined ? {} : { body: JSON.stringify(data) }) });
-  if (!response.ok) { const error = await response.json().catch(() => ({})); throw new Error(response.status === 403 ? 'Authentification expirée. Rechargez la page pour vous reconnecter.' : error.error?.startsWith('login:') || error.error?.startsWith('unlock:') ? 'Connexion refusée. Vérifiez le mot de passe maître du coffre et le code 2FA éventuel.' : 'Opération refusée.'); }
+async function api(path, data, scoped = true) {
+  const response = await fetch('/api/admin/' + path + (data === undefined ? '?vaultId=' + encodeURIComponent(selectedVault) : ''), { method: data === undefined ? 'GET' : 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, ...(data === undefined ? {} : { body: JSON.stringify({ ...data, ...(scoped ? { vaultId: selectedVault } : {}) }) }) });
+  if (!response.ok) { const error = await response.json().catch(() => ({})); throw new Error(response.status === 403 ? 'Authentification expirée. Rechargez la page pour vous reconnecter.' : error.error === 'duplicate-account' ? 'Ce compte est déjà configuré dans un autre coffre.' : error.error?.startsWith('login:') || error.error?.startsWith('unlock:') ? 'Connexion refusée. Vérifiez le mot de passe maître du coffre et le code 2FA éventuel.' : 'Opération refusée.'); }
   return response.json();
 }
 function display(state) {
+  if (state.vaultId && state.vaultId !== selectedVault) return;
+  $('sharing-open').href = state.account?.server || '#';
+  $('vault-select').replaceChildren();
+  for (const vault of state.vaults || []) { const option = document.createElement('option'); option.value = vault.id; option.textContent = vault.name; $('vault-select').append(option); }
+  $('vault-select').value = selectedVault;
+  if (document.activeElement !== $('vault-name')) $('vault-name').value = state.vaultName || '';
+  $('existing-client').replaceChildren();
+  for (const client of state.availableClients || []) if (!state.devices.some(device => device.id === client.id)) { const option = document.createElement('option'); option.value = client.id; option.textContent = client.name; $('existing-client').append(option); }
+  $('grant-client').disabled = !state.configured || !$('existing-client').options.length;
   $('unlock-requests').hidden = !(state.unlockRequests || []).length;
   $('request-list').replaceChildren();
   for (const request of state.unlockRequests || []) {
@@ -94,14 +126,19 @@ function display(state) {
 }
 async function refresh(initial = false) {
   const state = await api('state'); display(state);
-  if (initial && state.account) { $('server').value = state.account.server; $('email').value = state.account.email; $('automatic').checked = state.account.timeoutMinutes !== null; $('minutes').value = state.account.timeoutMinutes || 15; $('minutes').disabled = !$('automatic').checked; }
+  if (initial && state.vaultId === selectedVault) { $('server').value = state.account?.server || ''; $('email').value = state.account?.email || ''; $('password').value = ''; $('code').value = ''; $('automatic').checked = !state.account || state.account.timeoutMinutes !== null; $('minutes').value = state.account?.timeoutMinutes || 15; $('minutes').disabled = !$('automatic').checked; }
 }
-async function action(button, callback) { button.disabled = true; $('message').textContent = t('Opération en cours…'); try { await callback(); await refresh(); $('message').textContent = t('Enregistré.'); } catch (error) { $('message').textContent = t(error.message); } finally { button.disabled = false; } }
+async function action(button, callback) { button.disabled = true; $('vault-select').disabled = true; $('message').textContent = t('Opération en cours…'); try { await callback(); await refresh(); $('message').textContent = t('Enregistré.'); } catch (error) { $('message').textContent = t(error.message); } finally { button.disabled = false; $('vault-select').disabled = false; } }
 $('automatic').addEventListener('change', () => $('minutes').disabled = !$('automatic').checked);
 $('account-form').addEventListener('submit', event => { event.preventDefault(); action(event.submitter, async () => { const data = { server: $('server').value.trim().replace(/\/$/, ''), email: $('email').value.trim(), password: $('password').value, code: $('code').value, timeoutMinutes: $('automatic').checked ? Number($('minutes').value) : null }; try { await api('configure', data); } finally { $('password').value = ''; $('code').value = ''; data.password = ''; data.code = ''; } }); });
 $('unlock').addEventListener('click', () => action($('unlock'), async () => { try { await api('unlock', { code: $('unlock-code').value }); } finally { $('unlock-code').value = ''; } }));
 $('lock').addEventListener('click', () => action($('lock'), () => api('lock', {})));
 $('pair-form').addEventListener('submit', event => { event.preventDefault(); action(event.submitter, async () => { const value = await api('pairing', { name: $('device-name').value }); $('pair-code').value = value.code; $('pairing').hidden = false; $('show-pair').checked = false; $('pair-code').type = 'password'; setTimeout(() => { $('pair-code').value = ''; $('pairing').hidden = true; }, value.expiresInSeconds * 1000); }); });
 $('show-pair').addEventListener('change', () => $('pair-code').type = $('show-pair').checked ? 'text' : 'password');
+sharedUI = (await import('./sharing-ui.js')).initSharing({ api, action, t });
+$('vault-select').addEventListener('change', async event => { selectedVault = event.target.value; $('password').value = $('code').value = $('unlock-code').value = $('pair-code').value = ''; $('pairing').hidden = true; sharedUI.reset(); await refresh(true).catch(error => $('message').textContent = t(error.message)); });
+$('vault-add').addEventListener('click', () => action($('vault-add'), async () => { const vault = await api('vault-save', { name: $('new-vault-name').value }, false); selectedVault = vault.id; $('new-vault-name').value = ''; sharedUI.reset(); await refresh(true); }));
+$('vault-rename').addEventListener('click', () => action($('vault-rename'), () => api('vault-save', { name: $('vault-name').value })));
+$('grant-client').addEventListener('click', () => action($('grant-client'), () => api('grant-client', { deviceId: $('existing-client').value })));
 localize(); refresh(true).catch(error => $('message').textContent = t(error.message));
 setInterval(() => refresh().catch(() => {}), 5000);
