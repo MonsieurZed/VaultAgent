@@ -2,13 +2,16 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType><TargetFramework>net9.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
-    <AssemblyName>VaultAgent-Client</AssemblyName><RootNamespace>Homelab.Vault</RootNamespace><Version>3.0.0-preview.5</Version><RollForward>LatestMajor</RollForward>
+    <AssemblyName>VaultAgent-Client</AssemblyName><RootNamespace>Homelab.Vault</RootNamespace><Version>3.0.0-preview.6</Version><RollForward>LatestMajor</RollForward>
     <ApplicationManifest>client.manifest</ApplicationManifest><ApplicationIcon>../assets/shield.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../Remote/*.cs" Link="Remote/%(Filename)%(Extension)" />
     <Compile Include="../ShieldIcon.cs" Link="ShieldIcon.cs" />
     <Compile Include="../DirectInput.cs" Link="DirectInput.cs" />
+    <Compile Include="../TargetRequirement.cs" Link="TargetRequirement.cs" />
+    <Compile Include="../WindowTarget.cs" Link="WindowTarget.cs" />
+    <Compile Include="../TargetReport.cs" Link="TargetReport.cs" />
     <Compile Include="../UiText.cs" Link="UiText.cs" />
     <Compile Include="../UserPreferences.cs" Link="UserPreferences.cs" />
     <Compile Include="../HelloNative.cs" Link="HelloNative.cs" />

@@ -24,7 +24,7 @@ for($attempt=0;$attempt -lt 3;$attempt++){
 if($LASTEXITCODE -ne 0){throw 'Installateur non compile.'}
 & dotnet (Join-Path $PSScriptRoot 'client-setup\bin\Release\net9.0-windows\win-x64\VaultAgent-Client-Setup.dll') --verify-package
 if($LASTEXITCODE -ne 0){throw 'Verification du paquet echouee.'}
-$installer=Join-Path $distribution 'VaultAgent-Client-Setup-3.0.0-preview.5-x64.exe'
+$installer=Join-Path $distribution 'VaultAgent-Client-Setup-3.0.0-preview.6-x64.exe'
 Copy-Item -LiteralPath (Join-Path $build 'VaultAgent-Client-Setup.exe') -Destination $installer -Force
 $hash=(Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
 "$hash  $([IO.Path]::GetFileName($installer))" | Set-Content -LiteralPath ($installer+'.sha256') -Encoding ascii

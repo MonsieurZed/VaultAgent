@@ -51,7 +51,7 @@ export function createApp({ session: legacySession, devices: legacyDevices, vaul
         else throw new Error('route-refused'); return;
       }
       if (!owner || request.headers['x-authentik-username'] !== owner) throw new Error('owner-required');
-      const download = { '/downloads/windows-client.zip': 'VaultAgent-Windows-Client-3.0.0-preview.5-x64.zip', '/downloads/linux-client.tar.gz': 'VaultAgent-Linux-Client-3.0.0-preview.5.tar.gz', '/downloads/windows-client.zip.sha256': 'VaultAgent-Windows-Client-3.0.0-preview.5-x64.zip.sha256', '/downloads/linux-client.tar.gz.sha256': 'VaultAgent-Linux-Client-3.0.0-preview.5.tar.gz.sha256' }[path];
+      const download = { '/downloads/windows-client.zip': 'VaultAgent-Windows-Client-3.0.0-preview.6-x64.zip', '/downloads/linux-client.tar.gz': 'VaultAgent-Linux-Client-3.0.0-preview.6.tar.gz', '/downloads/windows-client.zip.sha256': 'VaultAgent-Windows-Client-3.0.0-preview.6-x64.zip.sha256', '/downloads/linux-client.tar.gz.sha256': 'VaultAgent-Linux-Client-3.0.0-preview.6.tar.gz.sha256' }[path];
       if (request.method === 'GET' && download && downloadsDirectory) {
         const stream = createReadStream(join(downloadsDirectory, download));
         response.once('close', () => stream.destroy());

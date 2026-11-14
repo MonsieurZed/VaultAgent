@@ -62,7 +62,7 @@ internal static class Program
         if (args[0] == "lock") { PipeTransport.SendAsync("lock").GetAwaiter().GetResult(); Console.WriteLine("Verrouillé."); return 0; }
         if (args[0] == "unlock") return UnlockFlow.RunDialog() ? 0 : 1;
         if (args[0] == "seal-probe" && args.Length == 2) { Print(AppPaths.Element(SealedSecret.Encrypt("vault-agent-paste-probe-20261107", args[1]))); return 0; }
-        if (args[0] == "foreground") return TypeCommand.Foreground();
+        if (args[0] == "foreground") return TargetReport.Foreground();
         if (args[0] == "type") return TypeCommand.Run(args[1..]);
         if (args[0] is "catalog" or "seal") {
             var status = PipeTransport.SendAsync("status").GetAwaiter().GetResult();
