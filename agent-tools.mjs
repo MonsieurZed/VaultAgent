@@ -4,7 +4,7 @@ import { generateKeyPairSync, privateDecrypt, createDecipheriv, constants } from
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-function invoke(executable, args) {
+function invoke(executable, args, acceptedCodes = [0]) {
   return new Promise((resolve, reject) => {
     const child = spawn(executable, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     let output = ''; let size = 0;
@@ -12,7 +12,7 @@ function invoke(executable, args) {
     child.stdout.on('data', chunk => { size += chunk.length; if (size > 4 * 1024 * 1024) child.kill(); else output += chunk; });
     child.stderr.resume();
     child.on('error', () => reject(new Error('Outil local du coffre indisponible.')));
-    child.on('close', code => { if (code !== 0) reject(new Error('Saisie refusée ou coffre indisponible.')); else {
+    child.on('close', code => { if (!acceptedCodes.includes(code)) reject(new Error('Saisie refusée ou coffre indisponible.')); else {
       try { resolve(JSON.parse(output)); } catch { reject(new Error('Réponse du coffre invalide.')); }
     }});
   });
@@ -36,6 +36,26 @@ export async function fillBrowser({ locator, itemId, field, executable = join(di
   } finally { text = undefined; if (key) key.fill(0); if (clear) clear.fill(0); }
 }
 
-export async function typeWindows({ itemId, field, executable = join(dirname(fileURLToPath(import.meta.url)), 'VaultAgent.exe') }) {
-  return invoke(executable, ['type', itemId, field]);
+const MISMATCH_EXIT_CODE = 3;
+
+function describeWindow(window) {
+  return window ? `${window.process} « ${window.title} »` : 'aucune fenêtre lisible';
+}
+
+/* Saisie clavier dans la fenêtre active ; `process` et `title` identifient la cible et sont obligatoires. */
+export async function typeWindows({ itemId, field, process: processName, title, executable = join(dirname(fileURLToPath(import.meta.url)), 'VaultAgent.exe') }) {
+  if (!['username', 'password', 'totp'].includes(field)) throw new Error('Champ invalide.');
+  if (typeof processName !== 'string' || typeof title !== 'string' || !processName.trim() || !title.trim()) {
+    throw new Error('Fournir process (exécutable) et title (fragment du titre) pour identifier la fenêtre cible.');
+  }
+  const result = await invoke(executable, ['type', itemId, field, '--process', processName, '--title', title], [0, MISMATCH_EXIT_CODE]);
+  if (result.typed !== true) {
+    throw new Error(`Saisie refusée : ${result.reason} Fenêtre active : ${describeWindow(result.foreground)}. Attendu : ${describeWindow({ process: result.expected?.process, title: result.expected?.title })}.`);
+  }
+  return result;
+}
+
+/* Identité de la fenêtre active, pour choisir process et title sans deviner. */
+export async function foregroundWindow({ executable = join(dirname(fileURLToPath(import.meta.url)), 'VaultAgent.exe') } = {}) {
+  return invoke(executable, ['foreground']);
 }

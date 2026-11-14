@@ -26,6 +26,7 @@ internal static class SelfTests
         Check(AccountStore.Unprotect(account) == password, "DPAPI");
         var serialized = JsonSerializer.Serialize(account.Public(), AppPaths.Json); Check(!serialized.Contains(password) && !serialized.Contains(account.ProtectedPassword), "configuration publique");
         TestHello();
+        TestWindowTarget();
         Passkeys.PasskeyTests.Run();
         TransportTests.Run();
         ApplicationTests.Run();
@@ -44,6 +45,19 @@ internal static class SelfTests
         stream.Position = 0; Check(PipeTransport.ReadAsync<Request>(stream, 1024, CancellationToken.None).GetAwaiter().GetResult().Op == "status", "trame IPC");
         using var bad = new MemoryStream(new byte[] { 255, 255, 255, 127 }); Reject(() => PipeTransport.ReadAsync<Request>(bad, 1024, CancellationToken.None).GetAwaiter().GetResult(), "taille IPC");
         Console.WriteLine("OK : delai, prolongation, commandes, DPAPI, secrets publics absents, signature Hello, IPC et passkeys CTAP/ES256/ABI Windows.");
+    }
+    private static void TestWindowTarget()
+    {
+        var requirement = TargetRequirement.Create("Chrome.EXE", "DVR Salon");
+        Check(requirement.Process == "Chrome" && requirement.Matches("chrome", "Caméras - dvr salon - Google Chrome"), "cible acceptée");
+        Check(!requirement.Matches("chrome", "New Tab - Google Chrome"), "onglet vide refusé");
+        Check(!requirement.Matches("msedge", "DVR Salon"), "autre processus refusé");
+        Check(!requirement.Matches("chrome.exe", "DVR Salon"), "nom de processus exact");
+        foreach (var title in new[] { "", "ab", "New Tab", "nouvel onglet", "Google Chrome", "chrome", "Tab", "about:blank", "Nouvel Onglet" }) Reject(() => TargetRequirement.Create("chrome", title), "titre générique : " + title);
+        foreach (var process in new[] { "", "../chrome", "x/chrome", "x\\chrome", "chro me", "chrome;calc" }) Reject(() => TargetRequirement.Create(process, "DVR Salon"), "processus invalide : " + process);
+        var (parsed, positional) = TargetRequirement.Parse(new[] { "id", "password", "--process", "chrome", "--title", "DVR" });
+        Check(parsed.Process == "chrome" && parsed.Title == "DVR" && positional.SequenceEqual(new[] { "id", "password" }), "analyse des options");
+        foreach (var args in new[] { new[] { "id", "password" }, new[] { "id", "--process", "chrome" }, new[] { "id", "--title", "DVR" }, new[] { "--process", "chrome", "--title" }, new[] { "--process", "chrome", "--title", "DVR", "--force" } }) Reject(() => TargetRequirement.Parse(args), "options manquantes ou inconnues");
     }
     private static void TestHello()
     {

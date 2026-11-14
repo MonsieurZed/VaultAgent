@@ -33,5 +33,5 @@ un affichage des variables, une lecture DOM, `inputValue`, une trace Playwright 
 un enregistrement de requêtes ou une capture qui montrerait les valeurs.
 
 S'il n'existe aucun runtime adapté, utiliser la saisie Windows avec une fenêtre visible et un champ
-correctement focalisé. Si le navigateur est virtuel et ne reçoit pas `SendInput`, signaler cette limite ;
+correctement focalisé, en fournissant `--process` et `--title` issus de `foreground`. Si le navigateur est virtuel et ne reçoit pas `SendInput`, signaler cette limite ;
 ne pas supposer que le clavier système contrôle un onglet virtuel.

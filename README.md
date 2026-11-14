@@ -92,8 +92,12 @@ nodeRepl.write(await vault.fillBrowser({
 
 Champs disponibles : `username`, `password`, `totp`. Le helper déchiffre localement et remplit le locator ;
 seule une confirmation est renvoyée au modèle. Aucune extension de navigateur ou presse-papiers.
-Pour Windows, donner le focus au champ après déverrouillage puis appeler
-`vault.typeWindows({itemId:'UUID',field:'totp'})`. La saisie Unicode vérifie la fenêtre active.
+Pour Windows, donner le focus au champ après déverrouillage, lire `vault.foregroundWindow()` puis appeler
+`vault.typeWindows({itemId:'UUID',field:'totp',process:'chrome',title:'fragment du titre'})`.
+`process` et `title` sont obligatoires : la saisie Unicode est refusée si la fenêtre active n'a pas ce
+processus et ce fragment de titre (hors titres génériques comme `New Tab` ou le nom du navigateur), et
+interrompue si la fenêtre change pendant la frappe. Commande native :
+`VaultAgent.exe type <UUID> <champ> --process <exe> --title <fragment>` (code 3 en cas de refus).
 
 Ce flux évite de montrer les valeurs au modèle dans l'usage normal. Il ne constitue pas une isolation
 contre du code arbitraire, un administrateur malveillant ou la page qui reçoit le secret.

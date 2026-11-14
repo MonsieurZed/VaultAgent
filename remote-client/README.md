@@ -47,8 +47,11 @@ nodeRepl.write(await remote.fillBrowser({
 Champs : username, password, totp. L'origine HTTPS exacte doit figurer dans les URL de la fiche.
 Verifier la page cible avant le remplissage. Ne jamais lire le DOM apres remplissage, inspecter
 les variables du helper ou journaliser le contenu des champs.
-`typeWindows` permet aussi la saisie dans le champ Windows actuellement selectionne :
-la fenetre active doit rester identique jusqu'a la saisie.
+`typeWindows` permet aussi la saisie dans le champ Windows actuellement selectionne.
+`process` (executable, ex. `chrome`) et `title` (fragment du titre de la page) sont obligatoires :
+la saisie est refusee si la fenetre active ne correspond pas, ou change pendant la frappe.
+Un titre generique (`Chrome`, `New Tab`) est rejete. `foregroundWindow()` renvoie le processus et
+le titre actuels pour les choisir. En cas de refus, l'erreur nomme la fenetre active et la cible.
 
 ## Linux
 

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 const executable = join(process.env.ProgramW6432 || process.env.ProgramFiles || 'C:\\Program Files', 'HomelabVaultAgent', 'VaultAgent.exe');
 const [action, ...args] = process.argv.slice(2);
 
-function invoke(parameters, json = true) {
+function invoke(parameters, json = true, acceptedCodes = [0]) {
   return new Promise((resolve, reject) => {
     const child = spawn(executable, parameters, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     let output = ''; let oversized = false;
@@ -16,7 +16,7 @@ function invoke(parameters, json = true) {
     });
     child.on('error', () => reject(new Error('VaultAgent absent ou inaccessible sur ce PC Windows.')));
     child.on('close', code => {
-      if (code !== 0 || oversized) { reject(new Error('Operation refusee ou annulee. Verifier le service et la validation Windows.')); return; }
+      if (!acceptedCodes.includes(code) || oversized) { reject(new Error('Operation refusee ou annulee. Verifier le service et la validation Windows.')); return; }
       try { resolve(json ? JSON.parse(output) : undefined); }
       catch { reject(new Error('Reponse du service invalide.')); }
     });
@@ -24,17 +24,22 @@ function invoke(parameters, json = true) {
 }
 
 async function main() {
-  if (!['status', 'catalog', 'unlock', 'lock', 'type'].includes(action)) throw new Error('Commandes : status, catalog [recherche], unlock, lock, type UUID username|password|totp.');
-  if (['status', 'unlock', 'lock'].includes(action) && args.length !== 0) throw new Error('Aucun argument attendu.');
+  if (!['status', 'catalog', 'unlock', 'lock', 'type', 'foreground'].includes(action)) throw new Error('Commandes : status, catalog [recherche], unlock, lock, foreground, type UUID username|password|totp --process <exe> --title <fragment>.');
+  if (['status', 'unlock', 'lock', 'foreground'].includes(action) && args.length !== 0) throw new Error('Aucun argument attendu.');
   if (action === 'catalog') {
     if (args.length > 1) throw new Error('Fournir une seule recherche entre guillemets.');
     return invoke(['catalog', ...args]);
   }
+  if (action === 'foreground') return invoke(['foreground']);
   if (action === 'type') {
-    if (args.length !== 2 || !/^[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}$/i.test(args[0]) || !['username', 'password', 'totp'].includes(args[1])) throw new Error('UUID et champ username|password|totp requis.');
+    const identity = ['--process', '--title'].map(flag => args.indexOf(flag));
+    if (args.length !== 6 || identity.some(index => index < 2 || index + 1 >= args.length) || identity[0] === identity[1] || !args[identity[0] + 1] || !args[identity[1] + 1]) throw new Error('UUID, champ, --process <exe> et --title <fragment du titre> requis.');
+    if (!/^[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}$/i.test(args[0]) || !['username', 'password', 'totp'].includes(args[1])) throw new Error('UUID et champ username|password|totp requis.');
     const status = await invoke(['status']);
     if (!status.unlocked) throw new Error('Deverrouiller le coffre avant de donner le focus au champ cible.');
-    return invoke(['type', ...args]);
+    const result = await invoke(['type', ...args], true, [0, 3]);
+    if (result.typed !== true) throw new Error('Saisie refusee : ' + result.reason + ' Fenetre active : ' + (result.foreground ? result.foreground.process + ' "' + result.foreground.title + '"' : 'illisible') + '. Attendu : ' + result.expected.process + ' "' + result.expected.title + '".');
+    return result;
   }
   if (action === 'unlock') await invoke(['unlock'], false);
   if (action === 'lock') { await invoke(['lock'], false); return { locked: true }; }

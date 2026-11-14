@@ -60,11 +60,17 @@ choisi et le champ. Cela convient notamment au navigateur intégré lorsque ses 
 au champ puis lancer sans ouvrir une nouvelle fenêtre console :
 
 ```powershell
-& $node '<chemin-du-skill>\scripts\vault.mjs' type UUID-DE-LA-FICHE password
+& $node '<chemin-du-skill>\scripts\vault.mjs' foreground
+& $node '<chemin-du-skill>\scripts\vault.mjs' type UUID-DE-LA-FICHE password --process chrome --title 'fragment du titre de la page'
 ```
 
-Le script utilise `windowsHide`; `type` utilise `SendInput` Unicode. Il vérifie la stabilité de la
-fenêtre active, sans vérifier l'identité du champ ou du site : cette vérification appartient à l'agent.
+Le script utilise `windowsHide`; `type` utilise `SendInput` Unicode. **`--process` et `--title` sont
+obligatoires** : la saisie est refusée, avant toute lecture du secret, si la fenêtre active n'a pas ce
+processus et ce fragment de titre, et interrompue si elle change pendant la frappe. Lire d'abord
+`foreground` pour connaître le processus et le titre actuels. Un titre générique (`Chrome`,
+`New Tab`, `Nouvel onglet`, nom d'un navigateur) est rejeté : si la page cible n'est pas ouverte et
+visible, demander à l'utilisateur de l'ouvrir et de cliquer dans le champ, ne jamais forcer ni taper
+dans un onglet vide. Le titre prouve la page, pas le champ : l'identité du champ reste à vérifier.
 La commande insère du texte dans la sélection courante. Si le champ contient déjà une valeur,
 la sélectionner dans l'interface avant de remplir, sans la lire. Pour TOTP, utiliser `totp` : le service
 calcule le code à la demande, sans exposer la graine. Traiter chaque champ séparément.

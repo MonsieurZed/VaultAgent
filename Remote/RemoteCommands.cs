@@ -33,9 +33,17 @@ internal static class RemoteCommands
             case "write-preview" when args.Length == 2: Print(RemoteConnection.CallAsync("write-preview", new { itemId = args[1] }).GetAwaiter().GetResult()); return 0;
             case "write-preview" when args.Length == 1: Print(RemoteConnection.CallAsync("write-preview", new { }).GetAwaiter().GetResult()); return 0;
             case "seal" when args.Length == 5: Print(RemoteConnection.CallAsync("seal", new { itemId = args[1], field = args[2], publicKey = args[3], origin = args[4] }).GetAwaiter().GetResult()); return 0;
-            case "type" when args.Length == 4: Print(RemoteConnection.TypeAsync(args[1], args[2], args[3]).GetAwaiter().GetResult()); return 0;
-            default: throw new ArgumentException("Commandes : settings, vaults, status, request-unlock, catalog, lock, seal, type, write-preview, sharing, share, write (JSON stdin) ; --vault UUID.");
+            case "type": return Type(args[1..]);
+            case "foreground": return TypeCommand.Foreground();
+            default: throw new ArgumentException("Commandes : settings, vaults, status, request-unlock, catalog, lock, seal, foreground, type, write-preview, sharing, share, write (JSON stdin) ; --vault UUID.");
         }
+    }
+    private static int Type(string[] args)
+    {
+        var (requirement, positional) = TargetRequirement.Parse(args);
+        if (positional.Length != 3) throw new ArgumentException("Usage : type <id-fiche> <username|password|totp> <origine> --process <exe> --title <fragment>.");
+        try { Print(RemoteConnection.TypeAsync(positional[0], positional[1], positional[2], requirement).GetAwaiter().GetResult()); return 0; }
+        catch (TargetMismatchException refusal) { return TypeCommand.Refuse(refusal); }
     }
     private static void Print(object value) => Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(value, AppPaths.Json));
     private static string ReadInput() {

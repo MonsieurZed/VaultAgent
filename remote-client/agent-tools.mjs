@@ -9,14 +9,14 @@ import { generateKeyPairSync, privateDecrypt, createDecipheriv, constants } from
 const root = dirname(fileURLToPath(import.meta.url));
 export const defaultConfig = () => join(homedir(), '.config', 'vaultagent', 'client.json');
 export function validServer(address) { const url = new URL(address); if (url.protocol !== 'https:' || url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw new Error('HTTPS VaultAgent server required'); return url.origin; }
-async function native(args, executable = join(root, 'VaultAgent-Client.exe'), payload) {
+async function native(args, executable = join(root, 'VaultAgent-Client.exe'), payload, accepted = [0]) {
   return new Promise((resolve, reject) => {
     const child = spawn(executable, args, { windowsHide: true, stdio: [payload ? 'pipe' : 'ignore', 'pipe', 'pipe'] }); let output = '';
     if (payload) { child.stdin.on('error', () => {}); child.stdin.end(JSON.stringify(payload), 'utf8'); }
     const timer = setTimeout(() => child.kill(), 115000); let errorCode = ''; child.stderr.on('data', value => { if (errorCode.length < 1024) errorCode += value; });
     child.stdout.on('data', value => { output += value; if (output.length > 4 * 1024 * 1024) child.kill(); });
     child.once('error', () => { clearTimeout(timer); reject(new Error('Remote client unavailable')); });
-    child.once('close', code => { clearTimeout(timer); if (code !== 0 && ['locked', 'vault-required'].includes(errorCode.trim())) { reject(new Error(errorCode.trim() === 'locked' ? 'Vault locked: requestUnlock requires user approval' : 'Choose a vaultId from vaults()')); return; } try { if (code !== 0) throw new Error(); resolve(JSON.parse(output)); } catch { reject(new Error('Request refused; check pairing and server vault authorization')); } });
+    child.once('close', code => { clearTimeout(timer); if (code !== 0 && ['locked', 'vault-required'].includes(errorCode.trim())) { reject(new Error(errorCode.trim() === 'locked' ? 'Vault locked: requestUnlock requires user approval' : 'Choose a vaultId from vaults()')); return; } try { if (!accepted.includes(code)) throw new Error(); resolve(JSON.parse(output)); } catch { reject(new Error('Request refused; check pairing and server vault authorization')); } });
   });
 }
 export async function request(operation, payload = {}, options = {}) {
@@ -98,8 +98,19 @@ export async function fillBrowser({ locator, itemId, field, origin, ...options }
     return { filled: true, field, clipboardUsed: false };
   } finally { key?.fill(0); clear?.fill(0); }
 }
-export async function typeWindows({ itemId, field, origin, executable, vaultId }) {
+const TARGET_REFUSED = 3;
+const describe = window => window ? `${window.process} "${window.title}"` : 'no readable window';
+function checkTyped(result) {
+  if (result.typed !== true) throw new Error(`Typing refused: ${result.reason} Active window: ${describe(result.foreground)}. Expected: ${describe(result.expected)}.`);
+  return result;
+}
+export async function typeWindows({ itemId, field, origin, executable, vaultId, process: processName, title }) {
   if (process.platform !== 'win32') throw new Error('Windows required');
   if (!['username', 'password', 'totp'].includes(field) || validServer(origin) !== origin) throw new Error('Invalid target');
-  return native(['type', itemId, field, origin, ...(vaultId === undefined ? [] : ['--vault', vaultId])], executable);
+  if (typeof processName !== 'string' || typeof title !== 'string' || !processName.trim() || !title.trim()) throw new Error('process (executable) and title (page or window title fragment) are required to identify the target window');
+  return checkTyped(await native(['type', itemId, field, origin, '--process', processName, '--title', title, ...(vaultId === undefined ? [] : ['--vault', vaultId])], executable, undefined, [0, TARGET_REFUSED]));
+}
+export async function foregroundWindow({ executable, vaultId } = {}) {
+  if (process.platform !== 'win32') throw new Error('Windows required');
+  return native(['foreground', ...(vaultId === undefined ? [] : ['--vault', vaultId])], executable);
 }

@@ -49,15 +49,20 @@ internal static class UiTests
         const string sample = "Test-éè-Unicode-42!";
         using var form = new Form { Text = "Test de saisie directe · valeur factice", ClientSize = new Size(420, 130), StartPosition = FormStartPosition.CenterScreen, Icon = ShieldIcon.Create(), TopMost = true };
         var box = new TextBox { UseSystemPasswordChar = true, Bounds = new Rectangle(25, 45, 360, 28) }; form.Controls.Add(box);
-        var step = 0; Exception? failure = null;
+        var step = 0; var refused = false; Exception? failure = null;
         using var timer = new System.Windows.Forms.Timer { Interval = 300 };
         timer.Tick += (_, _) => {
             if (step++ == 0) {
                 SetForegroundWindow(form.Handle); form.Activate(); box.Focus();
             } else if (step == 2) {
-                try { DirectInput.Type(sample, form.Handle); } catch (Exception error) { failure = error; }
+                try {
+                    var target = WindowTarget.Foreground();
+                    var wrong = TargetRequirement.Create(target.ProcessName, "Mauvaise cible");
+                    try { DirectInput.Type("must-not-be-typed", target, wrong); } catch (TargetMismatchException) { refused = true; }
+                    DirectInput.Type(sample, target, TargetRequirement.Create(target.ProcessName, "valeur factice"));
+                } catch (Exception error) { failure = error; }
             } else {
-                timer.Stop(); File.WriteAllText(receipt, JsonSerializer.Serialize(new { success = failure == null && box.Text == sample, clipboardUsed = false, unicode = true, error = failure?.Message, targetFocused = DirectInput.GetForegroundWindow() == form.Handle, characterCount = box.Text.Length }, AppPaths.Json)); form.Close();
+                timer.Stop(); File.WriteAllText(receipt, JsonSerializer.Serialize(new { success = failure == null && refused && box.Text == sample, wrongTargetRefused = refused, clipboardUsed = false, unicode = true, error = failure?.Message, targetFocused = WindowTarget.Foreground().Handle == form.Handle, characterCount = box.Text.Length }, AppPaths.Json)); form.Close();
             }
         };
         form.Shown += (_, _) => timer.Start(); Application.Run(form);

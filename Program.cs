@@ -15,7 +15,7 @@ internal static class Program
             if (args.Contains("--service")) { ServiceBase.Run(new BrokerService()); return 0; }
             if (args.Contains("--self-test")) { SelfTests.Run(); return 0; }
             if (args.Contains("--engine-smoke")) { EngineSmoke.Run(); return 0; }
-            if (args.Contains("--capabilities")) { Print(AppPaths.Element(new { helloAvailable = HelloNative.Available, webauthnApiVersion = HelloNative.ApiVersion, directInput = true, browserAdapter = true, vaultPasskeyProvider = true, passkeysExperimental = true })); return 0; }
+            if (args.Contains("--capabilities")) { Print(AppPaths.Element(new { helloAvailable = HelloNative.Available, webauthnApiVersion = HelloNative.ApiVersion, directInput = true, directInputRequiresWindowIdentity = true, browserAdapter = true, vaultPasskeyProvider = true, passkeysExperimental = true })); return 0; }
             ApplicationConfiguration.Initialize();
             if (args.Contains("--write-passkey-assets")) { Passkeys.ProviderActivation.WriteAssets(args[^1]); return 0; }
             if (args.Contains("--passkeys-settings")) {
@@ -51,7 +51,7 @@ internal static class Program
             if (args.Length > 0 && args[0].StartsWith("--render-", StringComparison.Ordinal)) { Console.Error.WriteLine(error.ToString()); return 1; }
             if (args.Contains("--service")) return 1;
             if (args.Contains("--self-test") || args.Contains("--engine-smoke")) { Console.Error.WriteLine(error.Message); return 1; }
-            if (args.Length > 0 && args[0] is "status" or "lock" or "unlock" or "exec" or "catalog" or "type" or "seal" or "seal-probe") { Console.Error.WriteLine(error.Message); return 1; }
+            if (args.Length > 0 && args[0] is "status" or "lock" or "unlock" or "exec" or "catalog" or "foreground" or "type" or "seal" or "seal-probe") { Console.Error.WriteLine(error.Message); return 1; }
             ApplicationConfiguration.Initialize();
             MessageBox.Show(error.Message, UiText.T("Coffre Bitwarden"), MessageBoxButtons.OK, MessageBoxIcon.Error); return 1;
         }
@@ -62,18 +62,16 @@ internal static class Program
         if (args[0] == "lock") { PipeTransport.SendAsync("lock").GetAwaiter().GetResult(); Console.WriteLine("Verrouillé."); return 0; }
         if (args[0] == "unlock") return UnlockFlow.RunDialog() ? 0 : 1;
         if (args[0] == "seal-probe" && args.Length == 2) { Print(AppPaths.Element(SealedSecret.Encrypt("vault-agent-paste-probe-20261107", args[1]))); return 0; }
-        if (args[0] is "catalog" or "type" or "seal") {
-            var targetWindow = DirectInput.GetForegroundWindow();
+        if (args[0] == "foreground") return TypeCommand.Foreground();
+        if (args[0] == "type") return TypeCommand.Run(args[1..]);
+        if (args[0] is "catalog" or "seal") {
             var status = PipeTransport.SendAsync("status").GetAwaiter().GetResult();
             if (!status.GetProperty("unlocked").GetBoolean() && !UnlockFlow.RunDialog()) return 1;
             if (args[0] == "catalog") { Print(PipeTransport.SendAsync("catalog", new { search = args.Length > 1 ? args[1] : "" }).GetAwaiter().GetResult()); return 0; }
             if (args[0] == "seal" && args.Length == 4) {
                 Print(PipeTransport.SendAsync("seal", new { request = new SecretRequest(args[1], args[2]), publicKey = args[3] }).GetAwaiter().GetResult()); return 0;
             }
-            if (args[0] != "type" || args.Length != 3) throw new ArgumentException("Usage : type <id-fiche> <username|password|totp>.");
-            var result = PipeTransport.SendAsync("worker-secret", new SecretRequest(args[1], args[2])).GetAwaiter().GetResult();
-            DirectInput.Type(result.GetProperty("value").GetString()!, targetWindow);
-            Print(AppPaths.Element(new { typed = true, field = args[2], clipboardUsed = false })); return 0;
+            throw new ArgumentException("Usage : seal <id-fiche> <champ> <clé-publique>.");
         }
         if (args[0] == "exec" && args.Length > 1) {
             _ = CliRequest.Parse(args[1..]);
@@ -81,7 +79,7 @@ internal static class Program
             if (!state.GetProperty("unlocked").GetBoolean() && !UnlockFlow.RunDialog()) return 1;
             Print(PipeTransport.SendAsync("execute", args[1..]).GetAwaiter().GetResult()); return 0;
         }
-        throw new ArgumentException("Commandes : status, unlock, lock, catalog [recherche], type <fiche> <champ>, exec <commande Bitwarden>.");
+        throw new ArgumentException("Commandes : status, unlock, lock, catalog [recherche], foreground, type <fiche> <champ> --process <exe> --title <fragment>, exec <commande Bitwarden>.");
     }
     private static void Print(JsonElement result)
     {

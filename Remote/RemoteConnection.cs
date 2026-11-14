@@ -62,14 +62,14 @@ internal static partial class RemoteConnection
         try { return await SendAsync(settings.Server, "/api/agent/" + operation, body, Encoding.UTF8.GetString(token)); }
         finally { CryptographicOperations.ZeroMemory(token); }
     }
-    public static async Task<object> TypeAsync(string itemId, string field, string origin) {
-        var target = DirectInput.GetForegroundWindow(); using var rsa = RSA.Create(2048);
+    public static async Task<object> TypeAsync(string itemId, string field, string origin, TargetRequirement requirement) {
+        var target = WindowTarget.Foreground(); DirectInput.Verify(target, requirement); using var rsa = RSA.Create(2048);
         var result = await CallAsync("seal", new { itemId, field, origin, publicKey = Convert.ToBase64String(rsa.ExportSubjectPublicKeyInfo()) });
         var key = rsa.Decrypt(result.GetProperty("encryptedKey").GetBytesFromBase64(), RSAEncryptionPadding.OaepSHA256);
         var clear = new byte[result.GetProperty("data").GetBytesFromBase64().Length];
         try {
             using var aes = new AesGcm(key, 16); aes.Decrypt(result.GetProperty("nonce").GetBytesFromBase64(), result.GetProperty("data").GetBytesFromBase64(), result.GetProperty("tag").GetBytesFromBase64(), clear);
-            DirectInput.Type(Encoding.UTF8.GetString(clear), target); return new { typed = true, field, clipboardUsed = false };
+            DirectInput.Type(Encoding.UTF8.GetString(clear), target, requirement); return new { typed = true, field, clipboardUsed = false, target = target.Describe() };
         } finally { CryptographicOperations.ZeroMemory(key); CryptographicOperations.ZeroMemory(clear); }
     }
 }
