@@ -43,6 +43,9 @@ La preversion 3.0.0-preview.2 ajoute la sauvegarde et la gestion des fiches sans
 secrets au modele : creation de connexions et notes securisees, modification ciblee, dossiers,
 controle de revision, verification interne et recus idempotents. Le helper `saveFromSource`
 transmet les valeurs depuis un fournisseur local autorise ; aucun connecteur Omada n'est inclus.
+Cote serveur, le CRUD est complet : adresses ajoutees ou retirees (`addUris`, `removeUris`),
+aperçu des adresses et de la presence des champs, corbeille et restauration des fiches, renommage et
+suppression de dossiers ; aucune suppression definitive.
 Lire le [guide d'ecriture](skills/vault-agent/references/write.md). Pour actualiser les skills
 Codex et Claude deja installes : `./install-agent-skill.ps1 -Update` (modifications locales refusees).
 

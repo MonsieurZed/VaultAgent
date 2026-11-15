@@ -27,6 +27,7 @@ internal static partial class RemoteConnection
         try { return new { deviceId = Encoding.UTF8.GetString(token).Split('.')[1], publicKey = Convert.ToBase64String(rsa.ExportSubjectPublicKeyInfo()) }; }
         finally { CryptographicOperations.ZeroMemory(token); }
     }
+    internal static string ApprovalPublicKey() { using var rsa = ApprovalKey(); return Convert.ToBase64String(rsa.ExportSubjectPublicKeyInfo()); }
     internal static string DecisionMessage(JsonElement request, bool approve, bool remember)
     {
         var server = ValidateServer(Read().Server);
@@ -42,15 +43,16 @@ internal static partial class RemoteConnection
     }
     internal static async Task DecideAsync(JsonElement request, bool approve, bool remember, IntPtr window = default)
     {
-        var message = DecisionMessage(request, approve, remember); HelloProof? helloProof = null;
+        var message = DecisionMessage(request, approve, remember); HelloProof? helloProof = null; string? elevationSignature = null;
         if (approve && request.TryGetProperty("helloRequired", out var required) && required.GetBoolean()) {
             if (!request.TryGetProperty("helloCredential", out var key) || key.ValueKind == JsonValueKind.Null || !HelloNative.Available) throw new InvalidOperationException("Windows Hello requis ou indisponible.");
             var credential = key.Deserialize<HelloCredential>(AppPaths.Json)!;
             var challenge = HelloVerification.Base64Url(SHA256.HashData(Encoding.UTF8.GetBytes(message)));
             helloProof = HelloNative.Sign(window, credential, challenge, HelloRp, HelloOrigin); HelloVerification.Verify(credential, helloProof, challenge, HelloRp, HelloOrigin);
         }
+        if (approve && request.TryGetProperty("elevationRequired", out var elevation) && elevation.ValueKind == JsonValueKind.True) elevationSignature = await Task.Run(() => ElevationSignature(message));
         var vaultId = request.TryGetProperty("vaultId", out var vault) ? vault.GetString() : "default";
-        await CallAsync("decide-unlock", new { requestId = request.GetProperty("requestId").GetString(), approve, remember, signature = ApprovalSignature(message), helloProof }, vaultId);
+        await CallAsync("decide-unlock", new { requestId = request.GetProperty("requestId").GetString(), approve, remember, signature = ApprovalSignature(message), helloProof, elevationSignature }, vaultId);
     }
     internal static async Task ResetAutomaticAsync(string vaultId) => await DecideAsync(await CallAsync("approval-context", new { }, vaultId), false, false);
 }
@@ -79,6 +81,7 @@ internal sealed class RemoteApprovalForm : Form
                 yes.Enabled = always.Enabled = false; title.Text = UiText.T("Windows Hello requis : activez-le dans le bouclier."); title.Font = new Font("Segoe UI", 11, FontStyle.Bold);
             }
         }
+        if (request.TryGetProperty("elevationRequired", out var elevation) && elevation.ValueKind == JsonValueKind.True) { yes.Left = 100; yes.Width = 190; yes.Text = UiText.T("Oui avec validation Windows"); }
         var end = request.GetProperty("expiresUtc").GetDateTimeOffset();
         async Task Decide(bool approved) {
             if (deciding) return; deciding = true; yes.Enabled = no.Enabled = always.Enabled = false;

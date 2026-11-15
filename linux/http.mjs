@@ -4,9 +4,11 @@ import { createReadStream } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { UnlockRequests } from './unlock-requests.mjs';
+import { PairRequests } from './pair-requests.mjs';
 
 export function createApp({ session: legacySession, devices: legacyDevices, vaults, origin, owner, trustedProxy, webDirectory, downloadsDirectory }) {
   const legacy = vaults ? null : { id: 'default', name: 'Coffre', session: legacySession, devices: legacyDevices, approvals: new UnlockRequests(legacySession, legacyDevices) };
+  const pairRequests = new PairRequests();
   const get = id => vaults ? vaults.get(id) : id === undefined || id === 'default' ? legacy : (() => { throw new Error('vault-missing'); })();
   const assets = { '/': ['index.html', 'text/html; charset=utf-8'], '/app.js': ['app.js', 'text/javascript; charset=utf-8'], '/sharing-ui.js': ['sharing-ui.js', 'text/javascript; charset=utf-8'], '/style.css': ['style.css', 'text/css; charset=utf-8'] };
   const send = (response, code, value) => { response.writeHead(code, { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' }); response.end(JSON.stringify(value)); };
@@ -24,7 +26,10 @@ export function createApp({ session: legacySession, devices: legacyDevices, vaul
       if (remote !== trustedProxy) throw new Error('proxy-required');
       if (request.headers.origin && request.headers.origin !== origin) throw new Error('origin-refused');
       if (request.method === 'POST' && path === '/api/pair') {
-        const input = await body(request); let code = input.code; let id;
+        const input = await body(request);
+        if (input.action === 'request') { send(response, 200, pairRequests.open(input.name, input.approverPublicKey)); return; }
+        if (input.action === 'poll') { send(response, 200, pairRequests.poll(input.requestId, input.secret)); return; }
+        let code = input.code; let id;
         if (typeof code === 'string' && code.includes('.')) { const split = code.indexOf('.'); id = code.slice(0, split); code = code.slice(split + 1); }
         const context = get(id); send(response, 200, { ...await context.devices.pair(code), vaultId: context.id }); return;
       }
@@ -35,12 +40,14 @@ export function createApp({ session: legacySession, devices: legacyDevices, vaul
         const context = vaults ? vaults.select(request.headers.authorization, data.vaultId) : get(data.vaultId);
         const { session, devices, approvals } = context;
         const authorized = () => devices.authenticate(request.headers.authorization); authorized();
-        if (path === '/api/agent/status') { const security = await approvals.security(authorized()); send(response, 200, { vaultId: context.id, vaultName: context.name, ...session.status(), approvalSecurity: security, unlockRequest: approvals.current(authorized()), approvalRequests: security.registered ? approvals.list().map(entry => ({ ...entry, vaultName: context.name, helloRequired: security.helloRequired, helloCredential: devices.record(authorized())?.helloCredential ?? null })) : [] }); }
+        if (path === '/api/agent/status') { const security = await approvals.security(authorized()); send(response, 200, { vaultId: context.id, vaultName: context.name, ...session.status(), approvalSecurity: security, unlockRequest: approvals.current(authorized()), approvalRequests: security.registered ? approvals.list().map(entry => ({ ...entry, vaultName: context.name, helloRequired: security.helloRequired, elevationRequired: security.elevationEnabled, helloCredential: devices.record(authorized())?.helloCredential ?? null })) : [] }); }
         else if (path === '/api/agent/request-unlock') send(response, 200, await approvals.request(authorized()));
         else if (path === '/api/agent/decide-unlock') send(response, 200, await approvals.signedDecision(authorized(), data, origin));
         else if (path === '/api/agent/approval-context') send(response, 200, approvals.context(authorized()));
         else if (path === '/api/agent/hello-begin') send(response, 200, await approvals.beginHello(authorized()));
         else if (path === '/api/agent/hello-enroll') send(response, 200, await approvals.enrollHello(authorized(), data, origin));
+        else if (path === '/api/agent/elevation-begin') send(response, 200, approvals.beginElevation(authorized()));
+        else if (path === '/api/agent/elevation-enroll') send(response, 200, await approvals.enrollElevation(authorized(), data, origin));
         else if (path === '/api/agent/catalog') send(response, 200, await session.catalog(data.search, authorized));
         else if (path === '/api/agent/seal') send(response, 200, await session.secret(data, authorized));
         else if (path === '/api/agent/write-preview') send(response, 200, await session.writePreview(data, authorized));
@@ -65,7 +72,7 @@ export function createApp({ session: legacySession, devices: legacyDevices, vaul
       if (request.method === 'GET' && path === '/api/admin/state') {
         const context = get(url.searchParams.get('vaultId') || undefined); const { session, devices, approvals } = context;
         const account = session.store.account;
-        send(response, 200, { vaultId: context.id, vaultName: context.name, vaults: vaults ? vaults.list() : [], availableClients: vaults ? vaults.availableClients() : [], ...session.status(), account: account ? { server: account.server, email: account.email, timeoutMinutes: account.timeoutMinutes } : null, devices: devices.list(), unlockRequests: approvals.list() }); return;
+        send(response, 200, { vaultId: context.id, vaultName: context.name, vaults: vaults ? vaults.list() : [], availableClients: vaults ? vaults.availableClients() : [], ...session.status(), account: account ? { server: account.server, email: account.email, timeoutMinutes: account.timeoutMinutes } : null, devices: devices.list(), unlockRequests: approvals.list(), pairRequests: pairRequests.list() }); return;
       }
       if (request.method !== 'POST' || request.headers.origin !== origin) throw new Error('origin-refused');
       const data = await body(request);
@@ -83,6 +90,9 @@ export function createApp({ session: legacySession, devices: legacyDevices, vaul
       else if (path === '/api/admin/lock') { session.lock(); send(response, 200, { locked: true }); }
       else if (path === '/api/admin/pairing') {
         if (!session.store.account) throw new Error('not-configured'); const result = devices.issue(data.name); send(response, 200, { ...result, code: context.id + '.' + result.code });
+      } else if (path === '/api/admin/pair-decide') {
+        if (data.approve === true) { if (!session.store.account) throw new Error('not-configured'); await pairRequests.approve(data.requestId, context); } else pairRequests.deny(data.requestId);
+        send(response, 200, { saved: true });
       } else if (path === '/api/admin/revoke') { session.lock(); await devices.revoke(data.deviceId); send(response, 200, { revoked: true }); }
       else throw new Error('route-refused');
     } catch (error) {

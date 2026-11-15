@@ -1,6 +1,6 @@
 ---
 name: vault-agent
-description: Remplir et gérer des identifiants, TOTP et fiches partagées avec VaultAgent sans renvoyer les secrets au modèle. Utiliser avec plusieurs coffres/comptes via le client Windows/Linux associé, ou pour le remplissage via le service Windows autonome.
+description: Remplir et gérer des identifiants, TOTP et fiches partagées avec VaultAgent sans renvoyer les secrets au modèle. Utiliser avec plusieurs coffres/comptes via le client Windows/Linux associé au serveur VaultAgent.
 license: MIT
 ---
 
@@ -18,11 +18,12 @@ L'agent ne clique jamais sur l'approbation et ne modifie pas cette politique.
 
 Pour **enregistrer ou gérer des fiches**, utiliser le client associé au serveur Linux
 **3.0.0-preview.2 ou ultérieur** : lire [references/write.md](references/write.md).
-Cette méthode sait créer des connexions, notes sécurisées et dossiers, puis modifier les champs
-autorisés avec une révision attendue. Le service Windows autonome 2.x n'a pas cette API.
+Cette méthode sait créer des connexions, notes sécurisées et dossiers, lire les adresses d'une fiche,
+modifier les champs autorisés avec une révision attendue (adresses ajoutées ou retirées comprises), mettre
+une fiche en corbeille ou la restaurer, renommer ou supprimer un dossier. Pas de suppression définitive.
 
-Pour le **remplissage via le service Windows autonome**, suivre les instructions ci-dessous.
-Il est installé dans `%ProgramFiles%\HomelabVaultAgent`.
+Le **remplissage sous Windows** passe par le client VaultAgent installé dans
+`%LOCALAPPDATA%\Programs\VaultAgentClient` (le service autonome 2.x n'est plus utilisé).
 Les champs disponibles sont `username`, `password` et `totp`. Le catalogue fournit les UUID,
 titres et origines des fiches ; les valeurs sont remplies par un helper sans être renvoyées au modèle.
 
@@ -31,23 +32,24 @@ titres et origines des fiches ; les valeurs sont remplies par un helper sans êt
 - Vérifier le site ou l'application demandés par l'utilisateur et le champ visé. Pour un site,
   comparer l'origine avec `origins` dans le catalogue. Une fiche trouvée par son nom ne suffit pas.
   Si plusieurs comptes conviennent ou si la cible diffère, demander le choix avant de remplir.
-- Les commandes doivent s'exécuter sur le PC Windows où VaultAgent est installé, avec le même
+- Les commandes doivent s'exécuter sur le PC Windows où le client est installé et associé, avec le même
   compte et la même session Windows interactive. Un conteneur ou une session distante n'y accède
   pas automatiquement. Ne pas exposer le broker sur le réseau pour contourner cette limite.
 - Le script local [scripts/vault.mjs](scripts/vault.mjs) accepte seulement les commandes ci-dessous.
-  Résoudre son chemin depuis ce dossier de skill. Le lancer avec le Node embarqué de VaultAgent :
+  Résoudre son chemin depuis ce dossier de skill. Le lancer avec un Node 22 ou plus (celui du système ou de l'outil) :
 
 ```powershell
-$node = Join-Path $env:ProgramFiles 'HomelabVaultAgent\runtime\node.exe'
+$node = 'node'
 & $node '<chemin-du-skill>\scripts\vault.mjs' status
-& $node '<chemin-du-skill>\scripts\vault.mjs' unlock
+& $node '<chemin-du-skill>\scripts\vault.mjs' unlock 60
 & $node '<chemin-du-skill>\scripts\vault.mjs' catalog 'nom du site'
 ```
 
-`status` ne montre pas l'email du compte et ne prolonge pas la session. Si `configured=false`,
-laisser l'utilisateur configurer son compte dans le bouclier violet ; ne pas lui demander son mot
-de passe dans le chat. `unlock` déclenche la validation Windows configurée, UAC ou Hello.
-Déverrouiller **avant** de donner le focus au champ. Ne pas sonder périodiquement le coffre pour
+`status` ne montre pas l'email du compte et ne prolonge pas la session. Si le client n'est pas associé,
+laisser l'utilisateur l'associer depuis sa fenêtre ; ne pas lui demander de mot de passe dans le chat.
+`unlock` envoie la demande et attend l'accord de l'utilisateur (carte Oui/Non du bouclier, avec
+validation UAC ou Windows Hello si activée) ; l'agent ne l'approuve jamais lui-même. Après `denied`,
+`failed` ou `expired`, arrêter et informer l'utilisateur. Déverrouiller **avant** de donner le focus au champ. Ne pas sonder périodiquement le coffre pour
 empêcher son expiration. Ne pas modifier le timeout ou le mode de protection pour terminer une connexion.
 
 ## Choisir le mode de remplissage
@@ -61,18 +63,19 @@ au champ puis lancer sans ouvrir une nouvelle fenêtre console :
 
 ```powershell
 & $node '<chemin-du-skill>\scripts\vault.mjs' foreground
-& $node '<chemin-du-skill>\scripts\vault.mjs' type UUID-DE-LA-FICHE password --process chrome --title 'fragment du titre de la page'
+& $node '<chemin-du-skill>\scripts\vault.mjs' type UUID-DE-LA-FICHE password https://adresse-exacte-de-la-page --process chrome --title 'fragment du titre de la page'
 ```
 
-Le script utilise `windowsHide`; `type` utilise `SendInput` Unicode. **`--process` et `--title` sont
-obligatoires** : la saisie est refusée, avant toute lecture du secret, si la fenêtre active n'a pas ce
+Le script utilise `windowsHide`; `type` utilise `SendInput` Unicode. L'**origine HTTPS** doit être exactement
+une adresse de la fiche (`origins` du catalogue), sinon le serveur refuse de remettre le secret.
+**`--process` et `--title` sont obligatoires** : la saisie est refusée, avant toute lecture du secret, si la fenêtre active n'a pas ce
 processus et ce fragment de titre, et interrompue si elle change pendant la frappe. Lire d'abord
 `foreground` pour connaître le processus et le titre actuels. Un titre générique (`Chrome`,
 `New Tab`, `Nouvel onglet`, nom d'un navigateur) est rejeté : si la page cible n'est pas ouverte et
 visible, demander à l'utilisateur de l'ouvrir et de cliquer dans le champ, ne jamais forcer ni taper
 dans un onglet vide. Le titre prouve la page, pas le champ : l'identité du champ reste à vérifier.
 La commande insère du texte dans la sélection courante. Si le champ contient déjà une valeur,
-la sélectionner dans l'interface avant de remplir, sans la lire. Pour TOTP, utiliser `totp` : le service
+la sélectionner dans l'interface avant de remplir, sans la lire. Pour TOTP, utiliser `totp` : le serveur
 calcule le code à la demande, sans exposer la graine. Traiter chaque champ séparément.
 
 Si les outils ne peuvent ni exécuter les commandes localement ni utiliser un locator local,
@@ -109,6 +112,6 @@ par l'utilisateur, sauf demande de verrouillage ou fin d'une session temporaire 
 - Cette voie évite le retour des secrets au modèle dans le flux normal. Elle ne protège pas contre
   du code arbitraire, un administrateur malveillant ou la page cible qui reçoit le secret.
 - Le fournisseur Windows des passkeys du coffre et le parcours SSO interactif intégré ne sont pas
-  livrés. Ne pas convertir une passkey en mot de passe ni présenter Hello comme un fournisseur de passkeys.
-- Si le service est arrêté ou absent, diagnostiquer avec `Get-Service HomelabVaultAgent` et `status`.
-  Ne pas réinstaller, oublier le compte ou désactiver TLS comme simple tentative de connexion.
+  livrés (le service autonome 2.x qui les expérimentait est retiré). Ne pas convertir une passkey en mot de passe ni présenter Hello comme un fournisseur de passkeys.
+- Si le client est absent ou non associé, diagnostiquer avec `status` et `vaults`. Ne pas réinstaller,
+  révoquer un client ou désactiver TLS comme simple tentative de connexion.

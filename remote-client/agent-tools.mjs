@@ -65,13 +65,18 @@ export const catalog = (search = '', options) => request('catalog', { search }, 
 export const lock = options => request('lock', {}, options);
 export const writePreview = (itemId, options) => request('write-preview', { itemId }, options);
 export const createFolder = (operationId, name, options) => request('write', { operationId, action: 'create-folder', item: { name } }, options);
+// Opérations sans secret : corbeille, restauration, renommage et suppression de dossier.
+export const deleteItem = ({ operationId, itemId, expectedRevisionDate, organizationId, ...options }) => request('write', { operationId, action: 'delete', itemId, expectedRevisionDate, organizationId }, options);
+export const restoreItem = ({ operationId, itemId, expectedRevisionDate, organizationId, ...options }) => request('write', { operationId, action: 'restore', itemId, expectedRevisionDate, organizationId }, options);
+export const renameFolder = ({ operationId, folderId, name, ...options }) => request('write', { operationId, action: 'update-folder', folderId, item: { name } }, options);
+export const deleteFolder = ({ operationId, folderId, ...options }) => request('write', { operationId, action: 'delete-folder', folderId }, options);
 // Le fournisseur lit la source dans le même processus ; ses valeurs ne sont jamais renvoyées.
 export async function saveFromSource({ operationId, action, itemId, expectedRevisionDate, organizationId, metadata, source, ...options }) {
   if (typeof source !== 'function') throw new Error('Source callback required');
   let values;
   try {
     if (!['create', 'update'].includes(action) || !metadata || typeof metadata !== 'object' || Array.isArray(metadata)) throw new Error('Invalid metadata');
-    const allowed = action === 'create' ? ['type', 'name', 'folderId', 'login', 'organizationId', 'collectionIds'] : ['name', 'folderId'];
+    const allowed = action === 'create' ? ['type', 'name', 'folderId', 'login', 'organizationId', 'collectionIds'] : ['name', 'folderId', 'removeUris', 'addUris'];
     if (Object.keys(metadata).some(key => !allowed.includes(key)) || metadata.login && Object.keys(metadata.login).some(key => key !== 'uris')) throw new Error('Secrets belong in source');
     values = await source();
     if (!values || typeof values !== 'object' || Array.isArray(values) || Object.keys(values).some(k => !['username', 'password', 'totp', 'notes'].includes(k))) throw new Error('Invalid source');

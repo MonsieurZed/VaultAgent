@@ -11,6 +11,7 @@
     <Compile Include="../DirectInput.cs" Link="DirectInput.cs" />
     <Compile Include="../TargetRequirement.cs" Link="TargetRequirement.cs" />
     <Compile Include="../WindowTarget.cs" Link="WindowTarget.cs" />
+    <Compile Include="../WindowFocus.cs" Link="WindowFocus.cs" />
     <Compile Include="../TargetReport.cs" Link="TargetReport.cs" />
     <Compile Include="../UiText.cs" Link="UiText.cs" />
     <Compile Include="../UserPreferences.cs" Link="UserPreferences.cs" />

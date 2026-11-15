@@ -79,6 +79,9 @@ aux contrôles de révision du SDK/serveur ; le verrou de sérialisation ne couv
 
 Serveur deploye sur Maison : https://vaultagent.lan.zed.cx. Authentik protege
 l'administration et l'association des clients utilise un code unique valable cinq minutes.
+Pour un client sans terminal interactif, `pair-request` ouvre une demande publique (`POST /api/pair`
+avec `action: request` puis `action: poll`) que le proprietaire approuve dans l'onglet Clients
+apres comparaison du code de controle ; le jeton n'est remis qu'une fois, au client demandeur.
 La session du moteur est persistante, avec delai glissant configurable ou desactivable.
 Tout redemarrage reverrouille les coffres. Les clients peuvent demander une ouverture selon
 la politique approuvee ; ils ne peuvent pas configurer les comptes ou leurs propres droits.

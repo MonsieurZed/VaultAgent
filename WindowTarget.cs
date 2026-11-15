@@ -21,12 +21,18 @@ internal sealed record WindowTarget(IntPtr Handle, int ProcessId, string Process
     {
         var handle = GetForegroundWindow();
         if (handle == IntPtr.Zero) throw new InvalidOperationException("Aucune fenêtre au premier plan.");
-        if (GetWindowThreadProcessId(handle, out var pid) == 0) throw new InvalidOperationException("Processus de la fenêtre active introuvable.");
+        return FromHandle(handle) ?? throw new InvalidOperationException("Processus de la fenêtre active illisible.");
+    }
+
+    /// <summary>Lit l'identité d'une fenêtre quelconque.</summary>
+    /// <param name="handle">Handle de la fenêtre.</param>
+    /// <returns>Instantané de la fenêtre, ou null si son processus est illisible.</returns>
+    public static WindowTarget? FromHandle(IntPtr handle)
+    {
+        if (GetWindowThreadProcessId(handle, out var pid) == 0) return null;
         string name;
         try { using var process = Process.GetProcessById((int)pid); name = process.ProcessName; }
-        catch (Exception error) when (error is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) {
-            throw new InvalidOperationException("Processus de la fenêtre active illisible.");
-        }
+        catch (Exception error) when (error is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { return null; }
         var builder = new StringBuilder(Math.Max(GetWindowTextLengthW(handle), 0) + 1);
         GetWindowTextW(handle, builder, builder.Capacity);
         return new WindowTarget(handle, (int)pid, name, builder.ToString());

@@ -12,6 +12,7 @@ import { ConfigCommand } from "@agent-upstream/platform/commands/config.command"
 import { firstValueFrom } from "rxjs";
 import { getUserId } from "@bitwarden/common/auth/services/account.service";
 import { CipherView } from "@bitwarden/common/vault/models/view/cipher.view";
+import { LoginUriView } from "@bitwarden/common/vault/models/view/login-uri.view";
 import { PolicyType } from "@bitwarden/common/admin-console/enums";
 import { applyWritePatch } from "./homelab-write-patch.mjs";
 
@@ -136,7 +137,7 @@ async function main() {
           if (!cipher.organizationId && await firstValueFrom(c.policyService.policyAppliesToUser$(PolicyType.OrganizationDataOwnership, userId))) throw new Error("refused");
           const original = await c.cipherService.decrypt(cipher, userId);
           const view = CipherView.fromJSON(JSON.parse(JSON.stringify(original)))!;
-          applyWritePatch(view, request.expectedRevisionDate, request.patch, request.organizationId ?? null);
+          applyWritePatch(view, request.expectedRevisionDate, request.patch, request.organizationId ?? null, (uri: string) => LoginUriView.fromJSON({ uri, match: null }));
           await c.cipherService.updateWithServer(view, userId, original);
           data = { id: request.itemId };
         } else if (request.op === "call") {

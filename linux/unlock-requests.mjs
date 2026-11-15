@@ -1,6 +1,7 @@
 /* Un client demande ; seule la session administrateur Authentik peut approuver. */
 import { randomUUID, randomBytes, createPublicKey, verify, constants } from 'node:crypto';
 import { verifyHello } from './hello.mjs';
+import { rsaPublicKey, verifyPss } from './keys.mjs';
 export const decisionMessage = (origin, requestId, challenge, approve, remember, vaultId = 'default') => JSON.stringify(['VaultAgent.Unlock.v2', origin, vaultId, requestId, challenge, approve, remember]);
 
 export class UnlockRequests {
@@ -46,7 +47,7 @@ export class UnlockRequests {
   }
   async security(deviceId) {
     const record = this.devices.record(deviceId); const policy = await this.session.store.load('approval-policy.json', {});
-    return { registered: !!record?.approverPublicKey, helloEnabled: !!record?.helloCredential,
+    return { registered: !!record?.approverPublicKey, helloEnabled: !!record?.helloCredential, elevationEnabled: !!record?.elevationPublicKey,
       helloEnrollmentAllowed: !!record?.helloEnrollmentAllowed,
       helloRequiredForAll: policy.profile === this.session.store.account?.profile && policy.requireHello === true,
       helloRequired: !!record?.helloCredential || policy.profile === this.session.store.account?.profile && policy.requireHello === true };
@@ -77,6 +78,25 @@ export class UnlockRequests {
     await this.session.store.save('approval-policy.json', { profile: this.session.store.account.profile, requireHello: true });
     if (!record.helloCredential) await this.devices.enrollHello(deviceId, input.credential); return { helloEnabled: true, helloRequired: true, vaultId: this.vaultId };
   }
+  beginElevation(deviceId) {
+    const record = this.devices.record(deviceId);
+    if (!record?.approverPublicKey || record.elevationPublicKey) throw new Error('elevation-enrollment-refused');
+    const entry = { requestId: 'enroll-elevation', challenge: randomBytes(32).toString('base64'), expires: this.clock() + 60000 };
+    this.contexts.set('elevation:' + deviceId, entry); return { vaultId: this.vaultId, requestId: entry.requestId, challenge: entry.challenge };
+  }
+  enrollElevation(deviceId, input, origin) {
+    const task = this.enrollmentTail.then(() => this.completeElevationEnrollment(deviceId, input, origin));
+    this.enrollmentTail = task.catch(() => {}); return task;
+  }
+  async completeElevationEnrollment(deviceId, input, origin) {
+    const record = this.devices.record(deviceId); const entry = this.contexts.get('elevation:' + deviceId);
+    if (!entry || entry.expires <= this.clock() || !record?.approverPublicKey || record.elevationPublicKey) throw new Error('elevation-enrollment-refused');
+    const message = decisionMessage(origin, 'enroll-elevation', entry.challenge, true, false, this.vaultId);
+    verifyPss(record.approverPublicKey, message, input.signature, 'approval-refused');
+    rsaPublicKey(input.publicKey); verifyPss(input.publicKey, message, input.elevationSignature, 'elevation-required');
+    this.contexts.delete('elevation:' + deviceId); await this.devices.enrollElevation(deviceId, input.publicKey);
+    return { elevationEnabled: true, vaultId: this.vaultId };
+  }
   async signedDecision(deviceId, input, origin) {
     const key = this.devices.record(deviceId)?.approverPublicKey;
     if (!key || typeof input.approve !== 'boolean' || typeof input.remember !== 'boolean' || typeof input.signature !== 'string') throw new Error('approver-required');
@@ -86,7 +106,9 @@ export class UnlockRequests {
     if (!entry || entry.expires <= this.clock()) throw new Error('request-expired');
     const publicKey = createPublicKey({ key: Buffer.from(key, 'base64'), type: 'spki', format: 'der' });
     if (!verify('sha256', Buffer.from(decisionMessage(origin, input.requestId, entry.challenge, input.approve, input.remember, this.vaultId)), { key: publicKey, padding: constants.RSA_PKCS1_PSS_PADDING, saltLength: 32 }, Buffer.from(input.signature, 'base64'))) throw new Error('approval-refused');
-    if (!reset && input.approve && (await this.security(deviceId)).helloRequired) verifyHello(this.devices.record(deviceId).helloCredential, input.helloProof, decisionMessage(origin, input.requestId, entry.challenge, input.approve, input.remember, this.vaultId));
+    const message = decisionMessage(origin, input.requestId, entry.challenge, input.approve, input.remember, this.vaultId);
+    if (!reset && input.approve && (await this.security(deviceId)).helloRequired) verifyHello(this.devices.record(deviceId).helloCredential, input.helloProof, message);
+    if (!reset && input.approve && this.devices.record(deviceId).elevationPublicKey) verifyPss(this.devices.record(deviceId).elevationPublicKey, message, input.elevationSignature, 'elevation-required');
     if (reset) { this.contexts.delete(deviceId); await this.devices.clearAutomatic(); return { automaticAcceptance: false }; }
     const result = await this.decide(input.requestId, input.approve);
     if (input.approve && input.remember) await this.devices.setAutomatic(entry.deviceId, true);

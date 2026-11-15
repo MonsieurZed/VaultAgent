@@ -8,8 +8,10 @@ les champs. Ce mecanisme ne constitue pas une isolation contre cet agent.
 
 ## Enregistrer et gérer les fiches — preview.2
 
-Le helper expose `writePreview(itemId?)`, `createFolder(operationId,name)` et
-`saveFromSource({operationId,action,metadata,source,itemId?,expectedRevisionDate?})`.
+Le helper expose `writePreview(itemId?)`, `createFolder(operationId,name)`,
+`saveFromSource({operationId,action,metadata,source,itemId?,expectedRevisionDate?})`, ainsi que
+`deleteItem`, `restoreItem`, `renameFolder` et `deleteFolder` (corbeille récupérable, aucun secret).
+`metadata` accepte `addUris` et `removeUris` pour les adresses d'une fiche existante.
 Les secrets restent dans une fonction source locale puis traversent stdin/HTTPS ; les reçus
 contiennent seulement UUID, action, révision et vérification. Connexions et notes sécurisées
 sont prises en charge. Les mises à jour ciblées préservent les passkeys et les champs non visés.
@@ -63,7 +65,12 @@ Le TAR Linux contient Node 22. Extraire le paquet, puis dans un terminal local i
 ./vaultagent-client catalog 'nom du site'
 ```
 
-Le code est saisi masque. La configuration est dans `~/.config/vaultagent/client.json`,
+Le code est saisi masque. Sans terminal interactif (VM, SSH sans saisie), utiliser l'approbation
+depuis le web : `./vaultagent-client pair-request https://vaultagent.lan.zed.cx [nom]` affiche un
+code de controle `XXXX-XXXX` et attend. Le proprietaire compare ce code dans l'onglet **Clients**
+du serveur, choisit le coffre voulu en haut de la page et clique **Autoriser sur ...**. La demande
+expire apres cinq minutes ; un agent peut la lancer mais ne peut pas l'approuver.
+La configuration est dans `~/.config/vaultagent/client.json`,
 permissions 0600. Ne pas lire ce fichier depuis un outil d'agent et ne pas le versionner.
 Importer `remote-client/agent-tools.mjs` pour remplir un locator Playwright sur Linux.
 Les clients ne peuvent ni configurer, ni deverrouiller le coffre. L'administrateur l'autorise

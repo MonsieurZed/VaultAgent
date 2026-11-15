@@ -38,15 +38,31 @@ export class Devices {
       if (this.attempts.length >= 10) throw new Error('pairing-rate-limit'); this.attempts.push(this.clock());
       const id = digest(String(code || '')); const entry = this.pairings.get(id); this.pairings.delete(id);
       if (!entry || entry.expires < this.clock() || entry.profile !== this.store.account?.profile) throw new Error('pairing-refused');
-      if (this.store.devices.length >= 32) throw new Error('device-limit');
-      const token = 'va1.' + randomUUID() + '.' + randomBytes(32).toString('base64url');
-      const device = { id: token.split('.')[1], name: entry.name, profile: entry.profile, created: new Date(this.clock()).toISOString(), hash: digest(token) };
-      await this.store.updateDevices(current => {
-        if (entry.profile !== this.store.account?.profile) throw new Error('pairing-refused');
-        return [...current.filter(value => value.profile === entry.profile), device];
-      });
-      return { token, deviceId: device.id };
+      return this.enroll(entry);
     }); this.tail = action.catch(() => {}); return action;
+  }
+  async enroll(entry) {
+    if (this.store.devices.length >= 32) throw new Error('device-limit');
+    const token = 'va1.' + randomUUID() + '.' + randomBytes(32).toString('base64url');
+    const device = { id: token.split('.')[1], name: entry.name, profile: entry.profile, created: new Date(this.clock()).toISOString(), hash: digest(token) };
+    if (entry.approverPublicKey) { device.approverPublicKey = entry.approverPublicKey; device.helloEnrollmentAllowed = true; }
+    await this.store.updateDevices(current => {
+      if (entry.profile !== this.store.account?.profile) throw new Error('pairing-refused');
+      return [...current.filter(value => value.profile === entry.profile), device];
+    });
+    return { token, deviceId: device.id };
+  }
+  enrollNamed(name, approverPublicKey) {
+    const profile = this.store.account?.profile; if (!profile) throw new Error('not-configured');
+    const action = this.tail.then(() => this.enroll({ name, profile, approverPublicKey })); this.tail = action.catch(() => {}); return action;
+  }
+  async enrollElevation(id, publicKey) {
+    const profile = this.store.account?.profile;
+    await this.store.updateDevices(current => {
+      const device = current.find(value => value.id === id && value.profile === profile);
+      if (this.store.account?.profile !== profile || !device?.approverPublicKey || device.elevationPublicKey) throw new Error('elevation-enrollment-refused');
+      return current.map(value => value === device ? { ...value, elevationPublicKey: publicKey } : value);
+    });
   }
   authenticate(header) {
     const token = /^Bearer (va1\.[a-f0-9-]{36}\.[A-Za-z0-9_-]{43})$/.exec(header || '')?.[1];

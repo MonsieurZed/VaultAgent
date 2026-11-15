@@ -22,6 +22,13 @@ internal static class RemoteCommands
             case "sharing": Print(RemoteConnection.CallAsync("sharing", new { }).GetAwaiter().GetResult()); return 0;
             case "share" when args.Length == 1:
                 using (var document = System.Text.Json.JsonDocument.Parse(ReadInput())) Print(RemoteConnection.CallAsync("share", document.RootElement).GetAwaiter().GetResult()); return 0;
+            case "elevation-sign" when args.Length == 4:
+                var (elevationKey, elevationSignature) = RemoteConnection.ElevationSign(args[1], System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(args[2])));
+                File.WriteAllLines(args[3], new[] { elevationKey, elevationSignature }); return 0;
+            case "elevation-enroll": Print(new { enrolled = RemoteConnection.EnrollElevationAsync().GetAwaiter().GetResult() }); return 0;
+            case "pair-request" when args.Length is 2 or 3:
+                RemoteConnection.PairRequestAsync(args[1], approver: args.Length == 3 && args[2] == "--approver", onVerification: code => Console.Error.WriteLine("Verification code: " + code + ". Approve this request in the Clients tab of the server after checking the same code.")).GetAwaiter().GetResult();
+                Print(new { paired = true }); return 0;
             case "approval-public-key": Print(RemoteConnection.ApprovalIdentity()); return 0;
             case "request-unlock":
                 Print(RemoteConnection.CallAsync("request-unlock", new { }).GetAwaiter().GetResult());
@@ -35,8 +42,16 @@ internal static class RemoteCommands
             case "seal" when args.Length == 5: Print(RemoteConnection.CallAsync("seal", new { itemId = args[1], field = args[2], publicKey = args[3], origin = args[4] }).GetAwaiter().GetResult()); return 0;
             case "type": return Type(args[1..]);
             case "foreground": return TargetReport.Foreground();
-            default: throw new ArgumentException("Commandes : settings, vaults, status, request-unlock, catalog, lock, seal, foreground, type, write-preview, sharing, share, write (JSON stdin) ; --vault UUID.");
+            case "focus": return Focus(args[1..]);
+            default: throw new ArgumentException("Commandes : settings, pair-request <serveur> [--approver], elevation-enroll, vaults, status, request-unlock, catalog, lock, seal, foreground, focus, type, write-preview, sharing, share, write (JSON stdin) ; --vault UUID.");
         }
+    }
+    private static int Focus(string[] args)
+    {
+        var (requirement, positional) = TargetRequirement.Parse(args);
+        if (positional.Length != 0) throw new ArgumentException("Usage : focus --process <exe> --title <fragment>.");
+        try { Print(new { focused = true, target = WindowFocus.Focus(requirement).Describe() }); return 0; }
+        catch (TargetMismatchException refusal) { return TargetReport.Refuse(refusal, "focused"); }
     }
     private static int Type(string[] args)
     {

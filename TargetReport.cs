@@ -11,9 +11,9 @@ internal static class TargetReport
     /// <summary>Affiche le refus en JSON (raison, cible attendue, fenêtre active) sans aucun secret.</summary>
     /// <param name="refusal">Refus levé par la vérification d'identité.</param>
     /// <returns>Code de sortie dédié au refus de cible.</returns>
-    public static int Refuse(TargetMismatchException refusal)
+    public static int Refuse(TargetMismatchException refusal, string field = "typed")
     {
-        Console.WriteLine(Serialize(new { typed = false, reason = refusal.Message, expected = new { process = refusal.Requirement.Process, title = refusal.Requirement.Title }, foreground = refusal.Foreground?.Describe() }));
+        Console.WriteLine(Serialize(new Dictionary<string, object?> { [field] = false, ["reason"] = refusal.Message, ["expected"] = new { process = refusal.Requirement.Process, title = refusal.Requirement.Title }, ["foreground"] = refusal.Foreground?.Describe() }));
         return MismatchExitCode;
     }
 

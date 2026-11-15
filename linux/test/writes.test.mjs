@@ -21,6 +21,7 @@ function fixture() {
     }
     if (request.path === '/sync') return {};
     if (request.path === '/list/object/items') return { data: structuredClone(items) };
+    if (request.path === '/list/object/items?trash=true') return { data: [] };
     if (request.path === '/list/object/folders') return { data: structuredClone(folders) };
     if (request.method === 'POST' && request.path === '/object/folder') { ++writes; const folder = { id, name: request.body.name }; folders.push(folder); return folder; }
     if (request.method === 'POST' && request.path === '/object/item') { ++writes; if (fail) throw new Error(secret); const item = { ...structuredClone(request.body), id, revisionDate: revision }; items.push(item); return structuredClone(item); }
@@ -81,4 +82,27 @@ test('CipherView est modifié sans reconstruire le sous-objet login', () => {
   const login = { password: secret, fido2Credentials: [{ keyValue: 'fake' }], passwordRevisionDate: revision }; const view = { type: 1, login, revisionDate: new Date(revision) };
   applyWritePatch(view, revision, { password: 'new-fake', totp: 'FAKE' }); assert.equal(view.login, login); assert.equal(view.login.fido2Credentials[0].keyValue, 'fake');
   assert.throws(() => applyWritePatch({ ...view, organizationId: 'shared' }, revision, { name: 'Refusé' }), /item-refused/);
+});
+
+test('addUris ajoute des adresses HTTPS sans retirer ni modifier les existantes ni les autres champs', async () => {
+  const f = fixture(); await f.session.write(create());
+  f.items[0].login.uris[0].uriChecksum = 'dummy-checksum'; f.items[0].login.uris[0].match = 1;
+  const before = structuredClone(f.items[0]);
+  const request = { action: 'update', operationId: '00000000-0000-4000-8000-000000000006', itemId: id, expectedRevisionDate: revision, patch: { addUris: ['https://nvr.example.test', 'https://example.test'] } };
+  const receipt = await f.session.write(request); assert.equal(receipt.verified, true);
+  assert.deepEqual(f.items[0].login.uris.map(entry => entry.uri), ['https://example.test', 'https://nvr.example.test']);
+  assert.equal(f.items[0].login.uris[0].match, 1); assert.equal(f.items[0].login.password, before.login.password); assert.equal(f.items[0].name, before.name);
+  assert.equal((await f.session.write(request)).replayed, true);
+});
+
+test('addUris refuse HTTP, identifiants, requête, fragment, doublons excessifs et fiches sans connexion', () => {
+  const view = () => ({ type: 1, login: { uris: [] }, revisionDate: revision, organizationId: null });
+  const apply = (value, item = view()) => applyWritePatch(item, revision, { addUris: value });
+  for (const value of [['http://nvr.example.test'], ['https://user:pass@nvr.example.test'], ['https://nvr.example.test/?a=1'], ['https://nvr.example.test/#x'], ['nvr'], [], 'https://nvr.example.test', [1], Array.from({ length: 21 }, (_, index) => 'https://h' + index + '.example.test')]) assert.throws(() => apply(value), /invalid-patch/);
+  assert.throws(() => apply(['https://nvr.example.test'], { type: 2, revisionDate: revision, organizationId: null }), /invalid-patch/);
+  const full = view(); full.login.uris = Array.from({ length: 20 }, (_, index) => ({ uri: 'https://h' + index + '.example.test' }));
+  assert.throws(() => apply(['https://extra.example.test'], full), /invalid-patch/);
+  const made = apply(['https://ok.example.test', 'https://ok.example.test']); assert.deepEqual(made.login.uris, [{ uri: 'https://ok.example.test', match: null }]);
+  const custom = applyWritePatch(view(), revision, { addUris: ['https://ok.example.test'] }, null, uri => ({ custom: uri }));
+  assert.deepEqual(custom.login.uris, [{ custom: 'https://ok.example.test' }]);
 });

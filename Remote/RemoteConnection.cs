@@ -42,7 +42,24 @@ internal static partial class RemoteConnection
     }
     public static async Task PairAsync(string address, string code) {
         var server = ValidateServer(address.Trim()); var result = await SendAsync(server, "/api/pair", new { code });
-        var token = Encoding.UTF8.GetBytes(result.GetProperty("token").GetString()!);
+        await SaveTokenAsync(server, result.GetProperty("token").GetString()!);
+    }
+    public static async Task PairRequestAsync(string address, Action<string> onVerification, bool approver = false, CancellationToken cancel = default) {
+        var server = ValidateServer(address.Trim()); var request = await SendAsync(server, "/api/pair", new { action = "request", name = Environment.MachineName, approverPublicKey = approver ? ApprovalPublicKey() : null });
+        var requestId = request.GetProperty("requestId").GetString()!; var secret = request.GetProperty("secret").GetString()!;
+        onVerification(request.GetProperty("verification").GetString()!);
+        var deadline = DateTime.UtcNow.AddSeconds(request.GetProperty("expiresInSeconds").GetInt32());
+        while (DateTime.UtcNow < deadline) {
+            await Task.Delay(2000, cancel);
+            var result = await SendAsync(server, "/api/pair", new { action = "poll", requestId, secret });
+            var state = result.GetProperty("state").GetString();
+            if (state == "approved") { await SaveTokenAsync(server, result.GetProperty("token").GetString()!); return; }
+            if (state == "denied") throw new RemoteRequestException("denied");
+        }
+        throw new RemoteRequestException("expired");
+    }
+    private static async Task SaveTokenAsync(string server, string value) {
+        var token = Encoding.UTF8.GetBytes(value);
         try {
             var encrypted = ProtectedData.Protect(token, Entropy, DataProtectionScope.CurrentUser);
             Directory.CreateDirectory(Path.GetDirectoryName(FileName)!);
@@ -51,7 +68,7 @@ internal static partial class RemoteConnection
         } finally { CryptographicOperations.ZeroMemory(token); }
     }
     public static async Task<JsonElement> CallAsync(string operation, object payload, string? vaultId = null) {
-        if (operation is not ("vaults" or "sharing" or "share" or "status" or "catalog" or "seal" or "lock" or "write" or "write-preview" or "request-unlock" or "decide-unlock" or "approval-context" or "hello-begin" or "hello-enroll")) throw new ArgumentException("Operation distante refusee.");
+        if (operation is not ("vaults" or "sharing" or "share" or "status" or "catalog" or "seal" or "lock" or "write" or "write-preview" or "request-unlock" or "decide-unlock" or "approval-context" or "hello-begin" or "hello-enroll" or "elevation-begin" or "elevation-enroll")) throw new ArgumentException("Operation distante refusee.");
         var body = System.Text.Json.JsonSerializer.SerializeToNode(payload, AppPaths.Json) as System.Text.Json.Nodes.JsonObject ?? throw new ArgumentException("Requete invalide.");
         var target = vaultId ?? TargetVault;
         if (target is not null) {

@@ -28,6 +28,9 @@ const translations = {
   'Votre accord ouvre le coffre aux clients associés pour le délai configuré. Code 2FA ci-dessus si nécessaire.': ['Approval opens the vault to paired clients for the configured timeout. Enter 2FA above if needed.', 'La aprobación abre la bóveda a los clientes asociados durante el plazo configurado. Introduce 2FA arriba si hace falta.'],
   'Autoriser cette demande': ['Approve this request', 'Aceptar esta solicitud'],
   'Refuser': ['Deny', 'Rechazar'],
+  'Ce PC deviendra approbateur du coffre.': ['This PC will become an approver for the vault.', 'Este equipo será aprobador de la bóveda.'],
+  'Demandes d’association': ['Pairing requests', 'Solicitudes de asociación'], 'Autoriser sur': ['Allow on', 'Permitir en'],
+  'Comparez le code avec celui affiché dans le terminal du client avant d’autoriser. Le client sera associé au coffre sélectionné en haut de cette page.': ['Compare the code with the one shown in the client terminal before approving. The client will be paired with the vault selected at the top of this page.', 'Compara el código con el que aparece en el terminal del cliente antes de autorizar. El cliente se asociará a la bóveda seleccionada al principio de esta página.'],
   'Toujours accepter les demandes de ce client': ['Always accept requests from this client', 'Aceptar siempre solicitudes de este cliente'],
   'À quoi sert un client ?': ['What is a client for?', '¿Para qué sirve un cliente?'],
   'Ce n’est pas un autre compte du coffre : c’est le petit programme qui remplit les champs là où votre agent travaille.': ['It is not another vault account: it is the small program that fills fields wherever your agent works.', 'No es otra cuenta de la bóveda: es el pequeño programa que rellena campos donde trabaja tu agente.'],
@@ -108,6 +111,21 @@ function display(state) {
       })); row.append(button);
     }
     $('request-list').append(row);
+  }
+  $('pair-requests').hidden = !(state.pairRequests || []).length;
+  $('pair-request-list').replaceChildren();
+  for (const request of state.pairRequests || []) {
+    const row = document.createElement('div'); row.className = 'device';
+    const info = document.createElement('div'); const name = document.createElement('strong'); name.textContent = request.name;
+    const verification = document.createElement('code'); verification.textContent = request.verification; info.append(name, document.createTextNode(' '), verification);
+    if (request.approver) { const approver = document.createElement('small'); approver.textContent = t('Ce PC deviendra approbateur du coffre.'); info.append(document.createElement('br'), approver); }
+    row.append(info);
+    for (const approve of [true, false]) {
+      const button = document.createElement('button'); button.textContent = approve ? t('Autoriser sur') + ' ' + (state.vaultName || '') : t('Refuser');
+      if (!approve) button.className = 'quiet';
+      button.addEventListener('click', () => action(button, () => api('pair-decide', { requestId: request.requestId, approve }))); row.append(button);
+    }
+    $('pair-request-list').append(row);
   }
   snapshot = state; $('state').textContent = t(!state.configured ? 'À configurer' : state.unlocked ? 'Coffre disponible pour les clients' : 'Coffre verrouillé');
   $('dot').textContent = state.unlocked ? '● ' : '○ '; $('expiration').textContent = state.unlocked ? state.expiresUtc ? new Date(state.expiresUtc).toLocaleTimeString(language) : t('Délai désactivé') : '';

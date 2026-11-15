@@ -1,17 +1,18 @@
 # Remplir un navigateur avec un locator local
 
 Utiliser cette voie seulement dans le runtime de l'outil qui possède le locator. Le module emploie
-Node et le service Windows local ; il ne s'exécute pas dans `page.evaluate` ni dans la console de la page.
+Node et le client VaultAgent Windows ; il ne s'exécute pas dans `page.evaluate` ni dans la console de la page.
 Aucun plugin de navigateur et aucun presse-papiers ne sont nécessaires.
 
 Dans un runtime Node local avec accès au locator :
 
 ```javascript
-var vault = await import('file:///C:/Program%20Files/HomelabVaultAgent/agent-tools.mjs');
+var vault = await import('file:///C:/Users/Zed/AppData/Local/Programs/VaultAgentClient/remote-agent-tools.mjs');
 var result = await vault.fillBrowser({
   locator: tab.playwright.getByLabel('Mot de passe', { exact: true }),
   itemId: 'UUID-DE-LA-FICHE',
-  field: 'password'
+  field: 'password',
+  origin: 'https://adresse-exacte-de-la-page'
 });
 nodeRepl.write(result);
 ```
@@ -22,7 +23,8 @@ seulement `result` via la sortie de l'outil. Adapter aux APIs effectivement docu
 Claude Code peut utiliser cette voie si ses outils exposent ce runtime local et ce locator ;
 un simple outil de navigateur attendant un texte en argument ne fournit pas cette capacité.
 
-Déverrouiller au préalable avec le script `vault.mjs`, puis sélectionner un locator unique dans la
+Résoudre le profil Windows courant plutôt que recopier le nom d'utilisateur de l'exemple. L'origine HTTPS doit
+correspondre exactement à une adresse de la fiche (`origins` du catalogue). Déverrouiller au préalable avec le script `vault.mjs`, puis sélectionner un locator unique dans la
 bonne page et le bon frame. Un `fillBrowser` réussi remplace la valeur du champ et renvoie seulement
 `{filled:true,field:'password',clipboardUsed:false}`. Utiliser `username` pour l'identifiant et `totp`
 pour un code authentificateur. Ne pas utiliser le mode `probe` pour une connexion réelle.

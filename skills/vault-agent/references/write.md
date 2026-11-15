@@ -13,10 +13,13 @@ il doit autoriser les clients dans l'interface. Ne pas changer son timeout ni co
 `writePreview()` renvoie seulement les dossiers et les métadonnées des connexions et notes
 actives, personnelles ou communes. Avec preview.4, choisir d'abord `vaultId` selon le
 [guide multi-coffre](multi-vault.md). `writePreview(itemId,scope)` renvoie notamment
-`{id,name,type,folderId,revisionDate,organizationId,collectionIds}`.
+`{id,name,type,folderId,revisionDate,organizationId,collectionIds}` et, pour une fiche seule,
+`deleted`, `uris` (les adresses enregistrées, non secrètes) et `has:{username,password,totp,notes}`
+(présence des champs, jamais leur valeur). La liste contient aussi `trash` : les fiches en corbeille.
 Vérifier la cible avec l'utilisateur et conserver la révision exacte avant une modification.
 Une fiche archivée ou supprimée est refusée. Une fiche commune exige son `organizationId`
-explicite pour l'édition et les droits natifs de la collection. Aucun effacement ni fusion n'est proposé.
+explicite pour l'édition, la corbeille et la restauration, avec les droits natifs de la collection. Aucune fusion
+n'est proposée et aucune suppression définitive : la corbeille reste récupérable.
 
 Créer une UUID publique `operationId` avant chaque opération et la conserver avec le reçu.
 Réutiliser exactement cette UUID et la même requête lors d'une répétition ; une UUID réutilisée
@@ -66,5 +69,23 @@ Modifier une fiche : `action:'update', itemId, expectedRevisionDate` obtenus par
 `metadata` peut contenir `name` et `folderId`; la source peut fournir `notes`, `username`,
 `password` ou la **graine** `totp` (pas un code éphémère). Pour un classement seul, `source:async()=>({})`.
 Seuls les champs fournis changent. Les passkeys, champs personnalisés, pièces jointes et autres
-données restent dans le service. Les URL d'une fiche existante ne sont pas modifiables par cette API.
+données restent dans le service.
+
+Adresses (`login.uris`) : `metadata:{addUris:['https://adresse.exacte']}` ajoute des adresses HTTPS
+(sans identifiants, requête ni fragment, vingt au plus, doublons ignorés). `metadata:{removeUris:['adresse telle que dans uris']}`
+retire des adresses, quel que soit leur schéma ; chacune doit exister, sinon la requête est refusée. Les deux se combinent
+dans une même écriture, le retrait passant avant l'ajout : c'est ainsi qu'on corrige ou remplace une adresse.
+
+## Corbeille, restauration et dossiers
+
+Ces opérations n'ont aucun secret : elles s'appellent directement, avec une UUID `operationId` et la
+révision lue par `writePreview(itemId)`.
+
+- `deleteItem({operationId,itemId,expectedRevisionDate,organizationId?})` met la fiche en corbeille ; le reçu donne la nouvelle `revisionDate`.
+- `restoreItem({operationId,itemId,expectedRevisionDate,organizationId?})` la sort de la corbeille (révision lue sur la fiche supprimée).
+- `renameFolder({operationId,folderId,name})` renomme un dossier ; un nom déjà pris est refusé.
+- `deleteFolder({operationId,folderId})` supprime le dossier ; ses fiches restent dans le coffre, sans dossier.
+
+Chaque opération relit le coffre pour se vérifier, renvoie le même reçu si elle est répétée à l'identique, et suit les
+règles de reprise ci-dessus. La suppression définitive d'une fiche n'est pas proposée : vider la corbeille reste un geste de Zed.
 La vérification relit le coffre en interne ; elle ne valide pas le fonctionnement du secret sur le site.

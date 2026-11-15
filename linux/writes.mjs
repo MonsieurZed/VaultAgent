@@ -1,40 +1,40 @@
 /* Écritures dédiées : aucun objet déchiffré ni empreinte de secret dans les reçus. */
-import { createHmac } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { applyWritePatch } from '../fork/write-patch.mjs';
+import { uuid, keys, active, visible, canonical } from './write-checks.mjs';
+import { openLedger, replayed, ensureCapacity, recordIntent, recordReceipt } from './write-ledger.mjs';
+import { LIFECYCLE_ACTIONS, validateLifecycle, saveLifecycle } from './write-lifecycle.mjs';
 
-const uuid = value => typeof value === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value);
-const plain = value => value && typeof value === 'object' && !Array.isArray(value);
-const keys = (value, allowed) => plain(value) && Object.keys(value).every(k => allowed.includes(k));
-function active(item) { if (!uuid(item.id) || item.deletedDate || item.archivedDate || ![1, 2].includes(item.type)) throw new Error('item-refused'); return item; }
-function canonical(value) {
-  if (Array.isArray(value)) return value.map(canonical);
-  if (plain(value)) return Object.fromEntries(Object.keys(value).sort().filter(k => value[k] != null).map(k => [k, canonical(value[k])]));
-  return value;
-}
 function comparable(item, passwordChanged) {
   const copy = structuredClone(item); delete copy.revisionDate;
   // Le serveur entretient l'historique et la date du mot de passe modifié.
   if (passwordChanged) { delete copy.passwordHistory; if (copy.login) delete copy.login.passwordRevisionDate; }
   for (const attachment of copy.attachments || []) delete attachment.url;
+  for (const entry of copy.login?.uris || []) delete entry.uriChecksum;
   return canonical(copy);
 }
 const metadata = item => ({ id: item.id, name: item.name, type: item.type, folderId: item.folderId ?? null, revisionDate: item.revisionDate, organizationId: item.organizationId ?? null, collectionIds: item.collectionIds || [] });
+const present = value => typeof value === 'string' && value.length > 0;
+const detail = item => ({ ...metadata(item), deleted: !!item.deletedDate, uris: (item.login?.uris || []).map(entry => entry.uri), has: { username: present(item.login?.username), password: present(item.login?.password), totp: present(item.login?.totp), notes: present(item.notes) } });
 export async function previewWrite(session, itemId, authorize) {
   const generation = session.generation; const engine = session.access(generation);
   await engine.request({ op: 'call', method: 'POST', path: '/sync' }); authorize(); session.access(generation);
   if (itemId === undefined) {
     const folders = (await engine.request({ op: 'call', method: 'GET', path: '/list/object/folders' })).data.map(folder => ({ id: folder.id, name: folder.name }));
-    const items = (await engine.request({ op: 'call', method: 'GET', path: '/list/object/items' })).data.filter(item => !item.deletedDate && !item.archivedDate && [1, 2].includes(item.type)).map(metadata);
-    authorize(); session.access(generation); session.touch(); return { folders, items };
+    const listed = async suffix => (await engine.request({ op: 'call', method: 'GET', path: '/list/object/items' + suffix })).data.filter(item => !item.archivedDate && [1, 2].includes(item.type));
+    const items = (await listed('')).filter(item => !item.deletedDate).map(metadata);
+    const trash = (await listed('?trash=true')).filter(item => item.deletedDate).map(metadata);
+    authorize(); session.access(generation); session.touch(); return { folders, items, trash };
   }
   if (!uuid(itemId)) throw new Error('invalid-item');
-  const item = active(await engine.request({ op: 'call', method: 'GET', path: '/object/item/' + itemId }));
-  authorize(); session.access(generation); session.touch(); return metadata(item);
+  const item = visible(await engine.request({ op: 'call', method: 'GET', path: '/object/item/' + itemId }));
+  authorize(); session.access(generation); session.touch(); return detail(item);
 }
 function validate(input) {
-  if (!keys(input, ['operationId', 'action', 'itemId', 'expectedRevisionDate', 'item', 'patch', 'organizationId']) || !uuid(input.operationId) || !['create', 'update', 'create-folder'].includes(input.action) || input.organizationId != null && !uuid(input.organizationId)) throw new Error('invalid-write');
-  if (input.action === 'create-folder') {
+  if (!keys(input, ['operationId', 'action', 'itemId', 'folderId', 'expectedRevisionDate', 'item', 'patch', 'organizationId']) || !uuid(input.operationId) || !['create', 'update', 'create-folder', ...LIFECYCLE_ACTIONS].includes(input.action) || input.organizationId != null && !uuid(input.organizationId)) throw new Error('invalid-write');
+  if (LIFECYCLE_ACTIONS.includes(input.action)) validateLifecycle(input);
+  else if (input.folderId) throw new Error('invalid-write');
+  else if (input.action === 'create-folder') {
     if (input.itemId || input.patch || input.expectedRevisionDate || !keys(input.item, ['name']) || typeof input.item.name !== 'string' || !input.item.name.trim() || input.item.name.length > 250 || /[\x00-\x1f]/.test(input.item.name)) throw new Error('invalid-write');
   } else if (input.action === 'create') {
     const item = input.item;
@@ -52,20 +52,18 @@ function validate(input) {
   } else {
     if (input.item || !uuid(input.itemId) || typeof input.expectedRevisionDate !== 'string' || !Number.isFinite(Date.parse(input.expectedRevisionDate))) throw new Error('invalid-write');
     // Validation commune au moteur, avant toute requête d'édition.
-    applyWritePatch({ type: 1, login: {}, revisionDate: input.expectedRevisionDate, organizationId: input.organizationId }, input.expectedRevisionDate, input.patch, input.organizationId ?? null);
+    const removable = Array.isArray(input.patch?.removeUris) ? input.patch.removeUris.filter(uri => typeof uri === 'string').map(uri => ({ uri })) : [];
+    applyWritePatch({ type: 1, login: { uris: removable }, revisionDate: input.expectedRevisionDate, organizationId: input.organizationId }, input.expectedRevisionDate, input.patch, input.organizationId ?? null);
   }
 }
 export async function saveWrite(session, input, authorize) {
-  validate(input); authorize(); const generation = session.generation; const engine = session.access(generation);
-  const ledger = await session.store.load('write-receipts.json', {});
-  const key = session.store.account.profile + ':' + input.operationId;
-  const fingerprint = createHmac('sha256', session.store.key).update(JSON.stringify(canonical(input))).digest('hex');
-  if (ledger[key]) {
-    if (ledger[key].fingerprint !== fingerprint) throw new Error('operation-conflict');
-    if (!ledger[key].receipt) throw new Error('write-indeterminate');
-    authorize(); session.access(generation); return { ...ledger[key].receipt, replayed: true };
-  }
-  if (Object.keys(ledger).length >= 10000) throw new Error('receipt-capacity');
+  validate(input); authorize();
+  if (LIFECYCLE_ACTIONS.includes(input.action)) return saveLifecycle(session, input, authorize);
+  const generation = session.generation; const engine = session.access(generation);
+  const entry = await openLedger(session, input);
+  const replay = replayed(entry);
+  if (replay) { authorize(); session.access(generation); return replay; }
+  ensureCapacity(entry);
   const call = (method, path, body) => engine.request({ op: 'call', method, path, body });
   await call('POST', '/sync'); authorize(); session.access(generation);
   let expected; let before; let existingFolder;
@@ -85,7 +83,7 @@ export async function saveWrite(session, input, authorize) {
   const folderId = input.action === 'create' ? input.item.folderId : input.action === 'update' ? input.patch.folderId : null;
   if (folderId != null && !(await call('GET', '/list/object/folders')).data.some(folder => folder.id === folderId)) throw new Error('folder-missing');
   authorize(); session.access(generation);
-  ledger[key] = { fingerprint }; await session.store.save('write-receipts.json', ledger);
+  await recordIntent(session, entry);
   // À partir d'ici, une panne ou une réponse perdue peut avoir écrit : aucun retry aveugle.
   let id = input.itemId;
   try {
@@ -101,8 +99,7 @@ export async function saveWrite(session, input, authorize) {
       }
       if (!verified) throw new Error('verification-failed');
       authorize(); session.access(generation);
-      const receipt = { id, operationId: input.operationId, action: input.action, verified: true };
-      ledger[key] = { fingerprint, receipt }; await session.store.save('write-receipts.json', ledger); session.touch(); return receipt;
+      return await recordReceipt(session, entry, { id, operationId: input.operationId, action: input.action, verified: true });
     }
     if (input.action === 'create') {
       const body = structuredClone(input.item); if (body.type === 2) body.secureNote = { type: 0 };
@@ -125,8 +122,7 @@ export async function saveWrite(session, input, authorize) {
     }
     if (!verified) throw new Error('verification-failed');
     authorize(); session.access(generation);
-    const receipt = { id, operationId: input.operationId, action: input.action, verified: true, revisionDate: saved.revisionDate };
-    ledger[key] = { fingerprint, receipt }; await session.store.save('write-receipts.json', ledger); session.touch(); return receipt;
+    return await recordReceipt(session, entry, { id, operationId: input.operationId, action: input.action, verified: true, revisionDate: saved.revisionDate });
   } catch { throw new Error('write-indeterminate'); }
 }
 function matchesCreated(saved, item) {
