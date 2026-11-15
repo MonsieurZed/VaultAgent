@@ -10,7 +10,7 @@ export function createApp({ session: legacySession, devices: legacyDevices, vaul
   const legacy = vaults ? null : { id: 'default', name: 'Coffre', session: legacySession, devices: legacyDevices, approvals: new UnlockRequests(legacySession, legacyDevices) };
   const pairRequests = new PairRequests();
   const get = id => vaults ? vaults.get(id) : id === undefined || id === 'default' ? legacy : (() => { throw new Error('vault-missing'); })();
-  const assets = { '/': ['index.html', 'text/html; charset=utf-8'], '/app.js': ['app.js', 'text/javascript; charset=utf-8'], '/sharing-ui.js': ['sharing-ui.js', 'text/javascript; charset=utf-8'], '/style.css': ['style.css', 'text/css; charset=utf-8'] };
+  const assets = { '/': ['index.html', 'text/html; charset=utf-8'], '/app.js': ['app.js', 'text/javascript; charset=utf-8'], '/style.css': ['style.css', 'text/css; charset=utf-8'] };
   const send = (response, code, value) => { response.writeHead(code, { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' }); response.end(JSON.stringify(value)); };
   async function body(request) {
     if (!/^application\/json(?:;|$)/i.test(request.headers['content-type'] || '')) throw new Error('json-required');
@@ -58,7 +58,7 @@ export function createApp({ session: legacySession, devices: legacyDevices, vaul
         else throw new Error('route-refused'); return;
       }
       if (!owner || request.headers['x-authentik-username'] !== owner) throw new Error('owner-required');
-      const download = { '/downloads/windows-client.zip': 'VaultAgent-Windows-Client-3.0.0-preview.6-x64.zip', '/downloads/linux-client.tar.gz': 'VaultAgent-Linux-Client-3.0.0-preview.6.tar.gz', '/downloads/windows-client.zip.sha256': 'VaultAgent-Windows-Client-3.0.0-preview.6-x64.zip.sha256', '/downloads/linux-client.tar.gz.sha256': 'VaultAgent-Linux-Client-3.0.0-preview.6.tar.gz.sha256' }[path];
+      const download = { '/downloads/windows-client.zip': 'VaultAgent-Windows-Client-3.0.0-preview.7-x64.zip', '/downloads/linux-client.tar.gz': 'VaultAgent-Linux-Client-3.0.0-preview.7.tar.gz', '/downloads/windows-client.zip.sha256': 'VaultAgent-Windows-Client-3.0.0-preview.7-x64.zip.sha256', '/downloads/linux-client.tar.gz.sha256': 'VaultAgent-Linux-Client-3.0.0-preview.7.tar.gz.sha256' }[path];
       if (request.method === 'GET' && download && downloadsDirectory) {
         const stream = createReadStream(join(downloadsDirectory, download));
         response.once('close', () => stream.destroy());
@@ -72,15 +72,11 @@ export function createApp({ session: legacySession, devices: legacyDevices, vaul
       if (request.method === 'GET' && path === '/api/admin/state') {
         const context = get(url.searchParams.get('vaultId') || undefined); const { session, devices, approvals } = context;
         const account = session.store.account;
-        send(response, 200, { vaultId: context.id, vaultName: context.name, vaults: vaults ? vaults.list() : [], availableClients: vaults ? vaults.availableClients() : [], ...session.status(), account: account ? { server: account.server, email: account.email, timeoutMinutes: account.timeoutMinutes } : null, devices: devices.list(), unlockRequests: approvals.list(), pairRequests: pairRequests.list() }); return;
+        send(response, 200, { vaultId: context.id, vaultName: context.name, ...session.status(), account: account ? { server: account.server, email: account.email, timeoutMinutes: account.timeoutMinutes } : null, devices: devices.list(), unlockRequests: approvals.list(), pairRequests: pairRequests.list() }); return;
       }
       if (request.method !== 'POST' || request.headers.origin !== origin) throw new Error('origin-refused');
       const data = await body(request);
-      if (path === '/api/admin/vault-save' && vaults) { send(response, 200, await vaults.save(data)); return; }
       const context = get(data.vaultId); const { session, devices, approvals } = context;
-      if (path === '/api/admin/grant-client' && vaults) { send(response, 200, await vaults.grant(context, data.deviceId)); return; }
-      if (path === '/api/admin/sharing') { send(response, 200, await session.sharing()); return; }
-      if (path === '/api/admin/share') { const { vaultId, ...input } = data; send(response, 200, await session.share(input)); return; }
       if (path === '/api/admin/write-preview') { send(response, 200, await session.writePreview(data)); return; }
       if (path === '/api/admin/write') { const { vaultId, ...input } = data; send(response, 200, await session.write(input)); return; }
       if (path === '/api/admin/configure') send(response, 200, await (vaults ? vaults.configure(context, data) : session.configure(data)));

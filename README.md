@@ -2,7 +2,7 @@
 
 ## Preversion 3 : serveur Linux et client Windows
 
-**[Telecharger la preversion 3.0.0-preview.6](https://github.com/MonsieurZed/VaultAgent/releases/tag/v3.0.0-preview.6)**
+**[Telecharger la preversion 3.0.0-preview.7](https://github.com/MonsieurZed/VaultAgent/releases/tag/v3.0.0-preview.7)**
 
 - Serveur Linux : moteur persistant, interface web FR/EN/ES, session a delai glissant et clients revocables.
 - Windows : installateur utilisateur, bouclier en arriere-plan et demarrage automatique ; le coffre reste sur Linux.
@@ -23,6 +23,8 @@ verification utilisateur requise et aucun secours automatique apres annulation.
 Les clients explicitement autorises en automatique restent automatiques.
 L'installateur relance aussi le bouclier apres une mise a jour silencieuse.
 Voir le [guide Hello du client distant](docs/remote-hello.md).
+
+La preversion 3.0.0-preview.7 permet d'associer un client en approuvant sa demande depuis la page web du serveur (`pair-request <serveur> [nom]`, sans code a saisir), ajoute la validation UAC facultative des deverrouillages, la commande `focus` qui met au premier plan une fenetre identifiee sans ambiguite, et complete l'API d'ecriture (`removeUris`, apercu, corbeille, restauration, dossiers). Les telechargements de la page serveur fournissent ces clients.
 
 La preversion 3.0.0-preview.6 impose l'identite de la fenetre cible pour la saisie clavier Windows : `--process` et `--title` sont obligatoires, un titre generique (nom du navigateur, onglet vide) est refuse et la saisie est interrompue si la fenetre change. La commande `foreground` indique la fenetre active.
 
