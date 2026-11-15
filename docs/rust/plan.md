@@ -50,6 +50,11 @@ se fournissent par `--values-stdin` (un objet JSON `{username,password,totp,note
   `#![forbid(unsafe_code)]`.
 - **Interface Windows** : un binaire Rust unique ; icône de barre et carte d'approbation minimales en Win32.
   Plus de .NET sur TowerZ à la fin.
+- **Validation d'une demande, une seule étape** (Zed, 15/11/2026) : réglage du bouclier « Validation : carte »
+  ou « Validation : UAC ». Mode carte : Oui/Non seulement, sans invite UAC. Mode UAC : l'invite UAC directement,
+  sans carte (bulle d'information avec le nom du client demandeur ; Annuler vaut refus). Passer de UAC à carte
+  exige une validation UAC, pour qu'un agent ne puisse pas abaisser la sécurité seul ; le serveur retire alors
+  la clé d'élévation enrôlée sur preuve signée par cette clé. Le client .NET actuel enchaîne carte puis UAC.
 
 ## Règles d'exécution (comme le plan Trackerr)
 
@@ -110,9 +115,9 @@ se fournissent par `--values-stdin` (un objet JSON `{username,password,totp,note
 |---|---|---|
 | 4.1 | `vaultagent-win32` : identité de fenêtre, premier plan unique, saisie `SendInput` avec contrôle de cible. | fenêtre factice du test |
 | 4.2 | Stockage DPAPI du jeton et de la clé d'approbateur. | aller-retour sur TowerZ |
-| 4.3 | Clé de validation UAC (DPAPI machine, ACL), signature par processus élevé. | enrôlement et signature réels |
+| 4.3 | Clé de validation UAC (DPAPI machine, ACL), signature par processus élevé ; retrait de la clé sur preuve UAC (passage en mode carte). | enrôlement, signature et retrait réels |
 | 4.4 | Windows Hello (preuve WebAuthn) quand disponible. | `hello-status` |
-| 4.5 | Icône de barre, carte d'approbation, réglages, notifications. | essai à la main avec Zed |
+| 4.5 | Icône de barre, carte d'approbation, réglages, notifications ; réglage de validation carte ou UAC, une seule étape par demande. | essai à la main avec Zed |
 | 4.6 | Installeur, remplacement du client .NET, retrait de .NET si plus utilisé. | installation sur TowerZ |
 
 ### Phase 5 — Bascule
