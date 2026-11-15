@@ -47,7 +47,7 @@ Codes utiles aux clients : `vault-required` (jeton valable pour plusieurs coffre
 `request-expired`, `approver-required`, `approval-refused`, `elevation-required`, `hello-required`,
 `hello-invalid`, `hello-enrollment-refused`, `hello-enrollment-authorization-required`,
 `elevation-enrollment-refused`, `pairing-refused`, `pairing-rate-limit`, `pairing-limit`, `invalid-device`,
-`device-limit`, `invalid-key`, `engine-*` et `<module>:<raison>` (erreurs du moteur relayées).
+`device-limit`, `invalid-key`, `invalid-vault-registry`, `invalid-vault`, `invalid-vault-name`, `vault-limit`, `duplicate-account`, `engine-*` et `<module>:<raison>` (erreurs du moteur relayées).
 
 Règle client (Node et .NET) : `423` → coffre verrouillé ; `400` avec `vault-required` → choisir un coffre ; tout
 autre statut non 2xx → refus. Aucune redirection n'est suivie ; une réponse de plus de 4 Mio est refusée.

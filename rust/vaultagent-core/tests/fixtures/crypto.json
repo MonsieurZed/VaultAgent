@@ -1,0 +1,92 @@
+{
+ "note": "Vecteurs factices produits par Node 22 ; les clés RSA ci-dessous sont des clés de test jetables, sans valeur.",
+ "protect": {
+  "keyHex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "clear": "valeur factice é 😀",
+  "value": {
+   "nonce": "Pl8pyYVyx/sKsWN4",
+   "tag": "Y5KvdAKNBe9zDXYx5VPRog==",
+   "data": "naVPklpEsX9rRFu34zQ6sAoCmYaBug=="
+  }
+ },
+ "seal": {
+  "clear": "secret-factice-42 é",
+  "publicKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxKU2SjnMCT/we8WeBFr8AqNNJlM5EjelTJNccODyAuYQvlp+xjy/ivNiTJ0czoSiriQ1qIJtph03Z1b2UxHbJ7wVc0zxwaetj0NU8SgBAkhxJth1prWQSMn+OUZVfXiBXjfXxKoLobfX27OnNoOvY8TLpCLwvFroeQypZzYauzTALyftIkkaUCXUhkR2WG09djpfz5iegdKhTCvi34TxmQkMLGZBZ8SLDXs56xrgIpObcONn5BmWd3rTExbx8m0cuakAyLxQGvn5bO9HER/XrtGnvaCDKk3jLf/+KyLsmi70Tl5Iz6hhOqD7cIC8gG4sby+3RXi/l4pKvBB2h8tmkwIDAQAB",
+  "privateKeyPkcs8": "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDEpTZKOcwJP/B7xZ4EWvwCo00mUzkSN6VMk1xw4PIC5hC+Wn7GPL+K82JMnRzOhKKuJDWogm2mHTdnVvZTEdsnvBVzTPHBp62PQ1TxKAECSHEm2HWmtZBIyf45RlV9eIFeN9fEqguht9fbs6c2g69jxMukIvC8Wuh5DKlnNhq7NMAvJ+0iSRpQJdSGRHZYbT12Ol/PmJ6B0qFMK+LfhPGZCQwsZkFnxIsNeznrGuAik5tw42fkGZZ3etMTFvHybRy5qQDIvFAa+fls70cRH9eu0ae9oIMqTeMt//4rIuyaLvROXkjPqGE6oPtwgLyAbixvL7dFeL+Xikq8EHaHy2aTAgMBAAECggEAYgoEcSkzooDwQqUZzQ4XirEj67GeSIjZrr3hXp2nyu4s9tpjTi5HSN1i6tOB4yyZdryyy9qLFECIuMrQcEX8v2i0QRHhji0tCLoHBVxudFbtovJUZdMrpj6esqtwP+fuh6zLtE8bEXt48R42haVNsi4RYTnST/X65S783mpJFX+tb2y7r2aeiwg/dMLVnh+aJRRRLUmjQA2h8HhT5o7IfegflGv0+ZF44+VgAdmlwmTAiOdE8SluYGr7bvaJOlzqO0YcMr/asAF/WdeNl0uNy/0nuiVCQ2a4THXhiPMUAS44UikHOOXMZAhn0ElKxk0RbgCIfEq/IgV8BdRsywizkQKBgQDly0FiR6sEorJP6TH3xgHYgr2HbEd1PPw2sy0ptz9vxe46LXl9XQA3UzrOKx21XRvBOQ4L3CKCeHmuAQLUO2qO/7W/nGbfgK9/V39/gw7wJcx1td4jGeU3DhY1JNWa47Z3gI80vnJKWW3/HA5KD3kmJbjiuQgSePS4da8FWW1YPQKBgQDbEjI0MrYreihEX+D5cr2w2d0akLTdab/B+PSpBqdzp1FvITriniuutlUDEKkZ0O9AC00MPIDqJJIDwbkqiqGtZNQPUgD/t6uuwXBJD3mmRgIUT1T25dt1BRW5TRgUtScSAp8qHY0cNXND15SJWpjrL2vHdS0gqealugl7VujXDwKBgCjDt+OhZxs5aXx3l9+mhqlL+CdP9BU+LlfdzUM7OMuxRyOW8ZhlqSYnY6UzTN/hlozefDlqYczXZm6Ry1iu+aZIgottSWqYv4lNklaif0Hm0rCHBNMhQuJTY2kmEaaagsIMUls+9bNuze6VoYtN12YHBxdhT6dHQdJ/Pf8q8BTZAoGAJv78NNJ6Hw8lr9YpY/4Kyjpd42ay617xpYO9eYEXubylAFU3+DMTr4wBYgRLNa89h3b7hhwXDpbn7wdDANGgqg7yuK9uQhbd1sPUSw0YKIL5x8e/ZhvQjuoSzeNtT/JXPBt/Xa3Y+paBKCht5m1cHzFXzC+Nkuzrg8C0A2KbG/0CgYEAwGipf/QfdJsNFQSLKgKngJHyceQhQN6016jfG/iUw177+J2oNUUOBRY6CtjHEEyZEeJRC/lUqznNMEbX3sSxUGz6uhBzF2oK2g4URV5vzvfJcELaTlMg8odKNdLvmH5Gjmp0nRQa1tb8xAf4TqiZPttRBu3GGumt+RGz0ESCFr8=",
+  "envelope": {
+   "encryptedKey": "f/hAIh3lGi9wrmrb/E9Osf5atWAzi7SELSXGcCiHGWg1dJkUq8/3RH+BGjObai/1LTtgDRL/ZneqAy+aTf+kaCYIMcHTi1LMNKUvIGc53r+9b5ZEpOiVqEnXN4uyExEtmpBgpc2Fuci+25Oo8I789HcV4+37RutuArIbGKNbGDOFuoFg63QFBZHKyK6os60or1ZKQS6LzfDjhheqgwJVGAcL8hDYYIhU+UE6z+YHd0mVO+dcMWk0M3guErGVpzsRuvnTcXP7z96V+cKB1+rZIHdSr318ZL8ReOatgZu/3gjXr3iCVK5jcTO4c1zbykbM/8W3KmHgIvLELj2fEbnaiQ==",
+   "nonce": "ePDPkpnep/bzn+TU",
+   "tag": "A5jFXd8GDDAzVfCkmaV/gw==",
+   "data": "OPHktnO/7GQu66rBblUucQOxDUU="
+  }
+ },
+ "sizes": {
+  "rsa1024": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC5yuPdZJ4GgUQvFLpe1kXOvesg7P16vM27q8E4aS886DoDRjuRsTkrVuPQInhivclER9tJ9PXMTlgRnXtfEdfdFU88i6yl/r3p5AYoK/9BPLdNsSQvyXuxX+ZonkAPULkLdHgzI5SlSc4h6jmzSO6X6tZdThNQw/rK4Ov//Mht7wIDAQAB",
+  "rsa3072": "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEA3K9C0cfl6KWTjfqZu7H/6vbbsGch5pLCouafjdjKeMtVuYoKo04JLHqmOYc7MehvK0HC9Q6EQKcWYVLkVQURGJjgwCj125Zv0BFIDkVnLWhTomfV4SMk56o5P+89VUuYhKxnoxlVEErt4D2sBmJHYP1/ybEKessGhXyO7+LST2I6C4+OuqsuuyRhD8+zKH+z+F81BK5G+G7vYqxUzcqRZOPj7STkeAmlkgp43Yabcv3kfPi4xWwidTHoFGFeFW5zxSBdDQiYF6ESwCNFdkUKaq+l1AXCMmxhpXzhV86KgJ9q7VmwgiaBts7RXBMfS85/fIS7MOe0UpzBPQ3dJoVvj8cYwSH+oQ3CiZsyZsZ12ZtZY6WaJHtYqpnn/szz6vx9RvpQJPb4evUf1rRZST18DZjQnB2N6GFMYwixJqb/Lrtp2A1beM+CBEpUlZChpYo5VUilSSvo7e1VX6q+iP/X/bj41kI0L4ZXijX4kXcMMG9/eejvcfMYZtZWYrc2sfRRAgMBAAE=",
+  "rsa4096": "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAl0FVWjeL3ETPn8Y19BXysBqCA0SOEnzMRWcfZdaSmiQ+BIBLoMXjCdA1nKwVidWWw8uAaD671nfHkjA66mkdAIBd8lvQRkEKQp+qxbmfNF83yPXsXa/v0BVsDkX3cm9DNY87lBq46y1P5ElNOPEzJIWPmse3sM2OO/B0DX7dUSl7bydGffH51N7a/BW2WS+2wCpnFNiRBmT4Oq2obmFs8lEfafopyAN2B2n+67Ch1VNrB+2FpJfVmMCT/+KTH5qvzYV9xUUgixRt2O9fyYHJ17j8zXu6zFVk9l80UXIjfrxcyk/SBPTTRp0AtYi3s9Wj1Bzys4LFfPdyjcypwqW/t2xVFFuwkoIF/PfwS/FpNAYaJWgEhJkoVMO7XTOawzxoOFQkrM10SF9+ao6okgvrwzKAuP9B48XQZI3WWOZwjquuhFgSJd6ajziZFP3HOra7MgwtAKOghukXngp53c2qYSG6a6ijQAxrpABrRfmBiEZ4cGbfpNm9Ok3ex52BLty1F0pDJaXbaOS7XbSgVGkiEwP7Hse+M/D4YozVX8SXHj/wJZ64Kbn7jrzQbYM95hRCI7wdy0uFr0za7GI1GWtQCe2l4X40mZ1V+n/NbZAlQ0bQMq4+O3CDMb6hsy9fUamtBWxbV6xqQq28mgFpx8NoAyA9tgi/p+EnUqLlZZpFkkECAwEAAQ==",
+  "ec": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEGiFOeNUQrPRdc4vjFAg9Yg0GPTd9C+cjCsS8tQk6ZQ/DrsgaCDoCtgYJuJC1+MK7WdaqeMFcDCk2FoEzecrqVA==",
+  "ed25519": "MCowBQYDK2VwAyEANKp7r08JN3Dj+a3ew4bpqQupwrxBXfCsYc55c+/BJ3U="
+ },
+ "pss": {
+  "publicKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxKU2SjnMCT/we8WeBFr8AqNNJlM5EjelTJNccODyAuYQvlp+xjy/ivNiTJ0czoSiriQ1qIJtph03Z1b2UxHbJ7wVc0zxwaetj0NU8SgBAkhxJth1prWQSMn+OUZVfXiBXjfXxKoLobfX27OnNoOvY8TLpCLwvFroeQypZzYauzTALyftIkkaUCXUhkR2WG09djpfz5iegdKhTCvi34TxmQkMLGZBZ8SLDXs56xrgIpObcONn5BmWd3rTExbx8m0cuakAyLxQGvn5bO9HER/XrtGnvaCDKk3jLf/+KyLsmi70Tl5Iz6hhOqD7cIC8gG4sby+3RXi/l4pKvBB2h8tmkwIDAQAB",
+  "otherPublicKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3chD8W9Kt8E2dGwLRCZrdlNiTgUwPEVlXKJ4S3yyeDbJy2EOpDDB31yY1rAtERSJ0iPDQ0BZKrUUqKWlzMvKkRp2uTzDKpe1gEvXH2ROfFCRHzFUGbtr5mhzFBxgRsTR4fsCer5C7h+/TX1OOWgUw31kCLxHCACTX7qSF5lZ/gOaLG3t+PTu1vUZOeFb0gfwj9chU3uv0gtTEuOS93IWJPKMrj0qJeiLCdvuNzy4HVZdZZ+ctY91TV9iL2WzUAMxwLGqUHmLxxjJjodaXN0XwO6FcGGb2yD+8uhUF2mz6Zr65838vIOWerfjTKJFzA6rkre387dRMWTeAp+QkyBdXQIDAQAB",
+  "origin": "https://vaultagent.example.test",
+  "vaultId": "default",
+  "requestId": "req-1",
+  "challenge": "challenge-xyz",
+  "approve": true,
+  "remember": false,
+  "message": "[\"VaultAgent.Unlock.v2\",\"https://vaultagent.example.test\",\"default\",\"req-1\",\"challenge-xyz\",true,false]",
+  "signature": "Caf9ucUrydBJKmzTRi2EcqwmmCm4HESzFWeBObCAfAv/VJ19pBkhG6if7lHJGJHw1Eh2aLsXK5M86J4TTpV/BysS5xjJqzY/u64sYAHqsh1l10Z1dJrAoM8xBCe+D0qr5P4cSubWWxVMPTFXAtk26znAQVrFjOUdn3pgLZclgPq4MqsoNVScRWvheAoTPRtpZukj8xvr6hph5aXXLBnK/Ig5bu822pPaPxnKNDId2ybNFKFN5xOUR4aMXktunHOwdqOSM15uJZWZ0P4rdwLa4KJWKOEo35oQDcxAi+v27MC9Jtoz9N2W4h1zGaWgSAThpLLM4KnkXDEMD+f+EWL1rg==",
+  "saltEmptySignature": "RNXiEFScClce5ulD0Uy0UJd8Q+GZjwHMnpr0YBP5wmrgvqL1/7CLtxdFtqt17++q1kFbC7jBnnhFT6SAYvkc3T20cTVjNdGgTteE015P/SwxhyIXAZytOKR7nni8UGe8x4K41DMq1mjmdhiJKw1MPN8mumjy12ys5F0sAcxvfV68J3wGq5mSNRwiexH1zD5/H9vrrY9Nk+e4hPXG0PM2hEhyYGGnPcaNoJYujBXe13ps4ilmSJ4RyvU8ijEBV12YlrP3jPInj+tcAF5+GiAKObQIDtAZPuAA0OD0umIb0YM2fzDNpfNE+wdokqNEp/kSNDrB9vlFFe0SH78JsS4JbQ=="
+ },
+ "message": {
+  "origin": "a\"b\\c\u0001 é😀\n",
+  "vaultId": "VaultAgent",
+  "requestId": "x",
+  "challenge": "d\te",
+  "approve": false,
+  "remember": true,
+  "expected": "[\"VaultAgent.Unlock.v2\",\"a\\\"b\\\\c\\u0001 é😀\\n\",\"VaultAgent\",\"x\",\"d\\te\",false,true]"
+ },
+ "dates": [
+  {
+   "millis": 0,
+   "iso": "1970-01-01T00:00:00.000Z"
+  },
+  {
+   "millis": 951868799999,
+   "iso": "2000-02-29T23:59:59.999Z"
+  },
+  {
+   "millis": 1795000000123,
+   "iso": "2026-11-18T11:06:40.123Z"
+  },
+  {
+   "millis": 4102444800000,
+   "iso": "2100-01-01T00:00:00.000Z"
+  },
+  {
+   "millis": 1709164799999,
+   "iso": "2024-02-28T23:59:59.999Z"
+  }
+ ],
+ "rust": {
+  "note": "Produits par Rust (graines 77 et 78) puis ouverts avec succes par Node le 2026-11-15.",
+  "sealSeed": 77,
+  "protectSeed": 78,
+  "sealClear": "secret rust é",
+  "protectClear": "stocké par Rust é",
+  "envelope": {
+   "data": "JPi6u6z7egU3G9/+yV0=",
+   "encryptedKey": "ui09A/FYc1R3zfaXdT1Pa9TRVOHxpfuy/H1sEpfq3IhLC0s2fPKn5UGFi5uCeIIvrKgxx8ldyAl7gahGvW26lD7gWBd58Cz8R4nxKdtGj599MZ1MaaKYgAR8s2bj7fqBXBNsuTIf8c+rhout+fsS2p1VCqAoRQMVeyFiCdBnAnXmAZYiV1IV5rMkehk+eKNjwyzkwUCGn6dFouEb9DYkhYpJuN+InCxzz93jG6VgLXhLoyVBmL8mr8dtG+WTDpKsqvQM+kMldhKq74vJIk/PMNfosubsLMXaWV7KmtcPlZ/eAlqwbx/xbRPRb8JELAVkw3Nbc5vZnjBoBxU+0EY6GA==",
+   "nonce": "a40T7SzTH3NB+jeu",
+   "tag": "rN62t4r0t269OSgMqBBHjA=="
+  },
+  "protected": {
+   "data": "C9MMsjBOqNTkuiTsJCfenRTc6w==",
+   "nonce": "YufNE7wLpSYAv6uo",
+   "tag": "rtZn+k40gBHrSwYl8sPPug=="
+  }
+ }
+}

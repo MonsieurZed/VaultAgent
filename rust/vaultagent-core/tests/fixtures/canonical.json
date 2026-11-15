@@ -1,0 +1,118 @@
+{
+ "canonical": [
+  {
+   "name": "empty_object",
+   "input": "{}",
+   "expected": "{}"
+  },
+  {
+   "name": "empty_array",
+   "input": "[]",
+   "expected": "[]"
+  },
+  {
+   "name": "scalar_null",
+   "input": "null",
+   "expected": "null"
+  },
+  {
+   "name": "scalar_true",
+   "input": "true",
+   "expected": "true"
+  },
+  {
+   "name": "string_plain",
+   "input": "\"abc\"",
+   "expected": "\"abc\""
+  },
+  {
+   "name": "sorted_keys",
+   "input": "{\"b\":1,\"a\":2,\"c\":{\"z\":1,\"y\":2}}",
+   "expected": "{\"a\":2,\"b\":1,\"c\":{\"y\":2,\"z\":1}}"
+  },
+  {
+   "name": "nulls_removed",
+   "input": "{\"a\":null,\"b\":{\"c\":null,\"d\":1},\"e\":[null,{\"f\":null,\"g\":2}]}",
+   "expected": "{\"b\":{\"d\":1},\"e\":[null,{\"g\":2}]}"
+  },
+  {
+   "name": "non_ascii_keys",
+   "input": "{\"é\":1,\"z\":2,\"a\":3,\"ß\":4,\"Z\":5,\"中\":6,\"é2\":7}",
+   "expected": "{\"Z\":5,\"a\":3,\"z\":2,\"ß\":4,\"é\":1,\"é2\":7,\"中\":6}"
+  },
+  {
+   "name": "surrogate_keys",
+   "input": "{\"\\ud83d\\ude00\":1,\"\\uffff\":2,\"\\ue000\":3,\"a\":4}",
+   "expected": "{\"a\":4,\"😀\":1,\"\":3,\"￿\":2}"
+  },
+  {
+   "name": "surrogate_string",
+   "input": "{\"s\":\"\\ud83d\\ude00 x\"}",
+   "expected": "{\"s\":\"😀 x\"}"
+  },
+  {
+   "name": "integer_like_keys",
+   "input": "{\"10\":1,\"9\":2,\"b\":3,\"a\":4,\"1\":5,\"01\":6}",
+   "expected": "{\"1\":5,\"9\":2,\"10\":1,\"01\":6,\"a\":4,\"b\":3}"
+  },
+  {
+   "name": "line_separators",
+   "input": "{\"s\":\"a\\u2028b\\u2029c\"}",
+   "expected": "{\"s\":\"a b c\"}"
+  },
+  {
+   "name": "control_chars",
+   "input": "{\"s\":\"\\u0000\\u0001\\b\\f\\n\\r\\t\\u001f\\u007f\\\"\\\\/\"}",
+   "expected": "{\"s\":\"\\u0000\\u0001\\b\\f\\n\\r\\t\\u001f\\\"\\\\/\"}"
+  },
+  {
+   "name": "numbers_basic",
+   "input": "[1.0,2,-0,0,0.0,-0.0,1.5,100,1e2,1E2,0.1,123456789012345678]",
+   "expected": "[1,2,0,0,0,0,1.5,100,100,100,0.1,123456789012345680]"
+  },
+  {
+   "name": "numbers_limits",
+   "input": "[1e21,1e20,12345678901234567890,1e-6,1e-7,0.000001,1.7976931348623157e308,5e-324,9007199254740993,18446744073709551615,-1e21,1.5e300,12345.6789e-10]",
+   "expected": "[1e+21,100000000000000000000,12345678901234567000,0.000001,1e-7,0.000001,1.7976931348623157e+308,5e-324,9007199254740992,18446744073709552000,-1e+21,1.5e+300,0.00000123456789]"
+  },
+  {
+   "name": "nested_deep",
+   "input": "{\"a\":{\"b\":{\"c\":{\"d\":[{\"e\":{\"f\":null,\"a\":[1,[2,[3,{\"z\":0,\"y\":null}]]]}}]}}}}",
+   "expected": "{\"a\":{\"b\":{\"c\":{\"d\":[{\"e\":{\"a\":[1,[2,[3,{\"z\":0}]]]}}]}}}}"
+  },
+  {
+   "name": "array_order_kept",
+   "input": "[3,1,2,{\"b\":1,\"a\":2}]",
+   "expected": "[3,1,2,{\"a\":2,\"b\":1}]"
+  },
+  {
+   "name": "unicode_text",
+   "input": "{\"nom\":\"Café \\u00e9\\u0301 日本語 \\ud83d\\ude80\",\"k\":\"\\u00e9\"}",
+   "expected": "{\"k\":\"é\",\"nom\":\"Café é́ 日本語 🚀\"}"
+  },
+  {
+   "name": "empty_keys",
+   "input": "{\"\":1,\"a\":2,\" \":3}",
+   "expected": "{\"\":1,\" \":3,\"a\":2}"
+  },
+  {
+   "name": "mixed_item",
+   "input": "{\"operationId\":\"00000000-0000-4000-8000-000000000002\",\"action\":\"update\",\"itemId\":\"00000000-0000-4000-8000-000000000001\",\"expectedRevisionDate\":\"2026-11-08T00:00:00.000Z\",\"patch\":{\"password\":\"Fictif-2\",\"name\":null,\"notes\":\"n\\nl\"}}",
+   "expected": "{\"action\":\"update\",\"expectedRevisionDate\":\"2026-11-08T00:00:00.000Z\",\"itemId\":\"00000000-0000-4000-8000-000000000001\",\"operationId\":\"00000000-0000-4000-8000-000000000002\",\"patch\":{\"notes\":\"n\\nl\",\"password\":\"Fictif-2\"}}"
+  }
+ ],
+ "fingerprints": [
+  {
+   "key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+   "input": "{\"operationId\":\"00000000-0000-4000-8000-000000000002\",\"action\":\"update\",\"itemId\":\"00000000-0000-4000-8000-000000000001\",\"expectedRevisionDate\":\"2026-11-08T00:00:00.000Z\",\"patch\":{\"password\":\"Fictif-2\",\"name\":null,\"notes\":\"n\\nl\"}}",
+   "expected": "525cce73f4bea2aeeefb9a72d912d3fd2ccfd7c2a68a818a226421250eecdb5f"
+  },
+  {
+   "key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+   "input": "{\"operationId\":\"00000000-0000-4000-8000-000000000003\",\"action\":\"create\",\"item\":{\"type\":1,\"name\":\"Exemple factice\",\"login\":{\"password\":\"Fictif-1\",\"uris\":[{\"uri\":\"https://example.test\"}]},\"folderId\":null}}",
+   "expected": "decefc672138ea5ed002806407055b0518a777edf023ae6ee77608e7c10a9bcd"
+  }
+ ],
+ "writeLedger": "{\"default:00000000-0000-4000-8000-000000000002\":{\"fingerprint\":\"525cce73f4bea2aeeefb9a72d912d3fd2ccfd7c2a68a818a226421250eecdb5f\",\"receipt\":{\"id\":\"00000000-0000-4000-8000-000000000001\",\"operationId\":\"00000000-0000-4000-8000-000000000002\",\"action\":\"update\",\"verified\":true,\"revisionDate\":\"2026-11-08T00:00:01.000Z\"}},\"default:00000000-0000-4000-8000-000000000003\":{\"fingerprint\":\"decefc672138ea5ed002806407055b0518a777edf023ae6ee77608e7c10a9bcd\"},\"default:00000000-0000-4000-8000-000000000004\":{\"fingerprint\":\"decefc672138ea5ed002806407055b0518a777edf023ae6ee77608e7c10a9bcd\",\"receipt\":{\"id\":\"00000000-0000-4000-8000-000000000009\",\"operationId\":\"00000000-0000-4000-8000-000000000004\",\"action\":\"create-folder\",\"verified\":true}}}",
+ "shareLedger": "{\"default:00000000-0000-4000-8000-000000000005\":{\"fingerprint\":\"525cce73f4bea2aeeefb9a72d912d3fd2ccfd7c2a68a818a226421250eecdb5f\",\"receipt\":{\"id\":\"00000000-0000-4000-8000-000000000001\",\"operationId\":\"00000000-0000-4000-8000-000000000005\",\"action\":\"apply\",\"organizationId\":\"00000000-0000-4000-8000-000000000008\",\"verified\":true}}}"
+}
