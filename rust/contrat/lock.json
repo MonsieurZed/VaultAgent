@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "name": "lock",
+  "description": "Un client associé verrouille le coffre.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/lock",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "locked": true
+    }
+  }
+}

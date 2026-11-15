@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "name": "agent-origin-refused",
+  "description": "Un en-tête origin différent de l'origine du service est refusé avant l'authentification.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/status",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json",
+      "origin": "https://evil.example.test"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "origin-refused"
+    }
+  }
+}

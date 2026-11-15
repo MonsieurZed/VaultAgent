@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "name": "request-unlock-pending",
+  "description": "Un coffre verrouillé crée une demande de déverrouillage en attente.",
+  "fixture": {
+    "vault": "locked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/request-unlock",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "vaultId": "default",
+      "requestId": "{{uuid}}",
+      "state": "pending",
+      "expiresUtc": "{{iso-date}}"
+    }
+  }
+}

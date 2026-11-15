@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "name": "hello-enroll-refused",
+  "description": "Un enrôlement Hello sans contexte ouvert est refusé.",
+  "fixture": {
+    "vault": "locked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/hello-enroll",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "credential": {},
+      "helloProof": "x",
+      "signature": "x"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "hello-enrollment-refused"
+    }
+  }
+}

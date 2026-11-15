@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "name": "write-preview-list",
+  "description": "L'aperçu sans fiche liste dossiers, fiches et corbeille.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/write-preview",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "folders": [
+        {
+          "id": "{{uuid}}",
+          "name": "Dossier factice"
+        }
+      ],
+      "items": [
+        {
+          "id": "{{itemId}}",
+          "name": "Compte factice",
+          "type": 1,
+          "folderId": null,
+          "revisionDate": "2026-11-08T00:00:00.000Z",
+          "organizationId": null,
+          "collectionIds": []
+        }
+      ],
+      "trash": []
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "name": "seal-origin-refused",
+  "description": "Une origine absente des URI de la fiche est refusée.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/seal",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "itemId": "{{itemId}}",
+      "field": "password",
+      "origin": "https://other.example.test",
+      "publicKey": "{{rsaPublicKey}}"
+    }
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "origin-refused"
+    }
+  }
+}

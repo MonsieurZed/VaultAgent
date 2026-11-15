@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "name": "approval-context-not-approver",
+  "description": "Un client non approbateur ne peut pas ouvrir de contexte d'approbation.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/approval-context",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "approver-required"
+    }
+  }
+}

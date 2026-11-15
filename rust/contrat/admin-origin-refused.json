@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "name": "admin-origin-refused",
+  "description": "Une route d'administration POST sans origin est refusée.",
+  "fixture": {
+    "vault": "locked",
+    "client": "none"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/admin/lock",
+    "headers": {
+      "x-authentik-username": "{{owner}}",
+      "content-type": "application/json"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "origin-refused"
+    }
+  }
+}

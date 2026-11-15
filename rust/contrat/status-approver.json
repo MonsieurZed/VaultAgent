@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "name": "status-approver",
+  "description": "Un approbateur voit la demande de déverrouillage en attente de son propre client.",
+  "fixture": {
+    "vault": "locked",
+    "client": "approver"
+  },
+  "steps": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/agent/request-unlock",
+        "headers": {
+          "authorization": "{{token}}",
+          "content-type": "application/json"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff"
+        },
+        "body": {
+          "vaultId": "default",
+          "requestId": "{{uuid}}",
+          "state": "pending",
+          "expiresUtc": "{{iso-date}}"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/agent/status",
+        "headers": {
+          "authorization": "{{token}}",
+          "content-type": "application/json"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff"
+        },
+        "body": {
+          "unlocked": false,
+          "approvalSecurity": {
+            "registered": true,
+            "helloEnabled": false,
+            "elevationEnabled": false,
+            "helloEnrollmentAllowed": true,
+            "helloRequiredForAll": false,
+            "helloRequired": false
+          },
+          "unlockRequest": {
+            "requestId": "{{uuid}}",
+            "state": "pending"
+          },
+          "approvalRequests": [
+            {
+              "vaultId": "default",
+              "requestId": "{{uuid}}",
+              "state": "pending",
+              "expiresUtc": "{{iso-date}}",
+              "challenge": "{{base64}}",
+              "deviceName": "Approbateur factice",
+              "vaultName": "Coffre",
+              "helloRequired": false,
+              "elevationRequired": false,
+              "helloCredential": null
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+[package]
+name = "vaultagent-engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Processus enfant Node de VaultAgent : protocole JSON ligne à ligne, délais et redémarrage."
+
+[lints]
+workspace = true

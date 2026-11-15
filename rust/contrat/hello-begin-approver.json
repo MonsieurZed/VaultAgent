@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "name": "hello-begin-approver",
+  "description": "Un approbateur ouvre l'enrôlement Hello et reçoit un défi.",
+  "fixture": {
+    "vault": "locked",
+    "client": "approver"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/hello-begin",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "vaultId": "default",
+      "requestId": "enroll-hello",
+      "challenge": "{{base64}}",
+      "helloCredential": null
+    }
+  }
+}

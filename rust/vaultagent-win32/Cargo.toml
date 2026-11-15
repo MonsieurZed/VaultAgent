@@ -1,0 +1,13 @@
+[package]
+name = "vaultagent-win32"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Seule crate de VaultAgent où unsafe est autorisé : enveloppes sûres de l'API Win32."
+
+[lints]
+workspace = true
+
+[package.metadata.conduite]
+unsafe = "FFI Win32 : fenêtres, SendInput, DPAPI, NCrypt, WebAuthn, icône de barre"

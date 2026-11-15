@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "name": "seal-envelope",
+  "description": "Une enveloppe chiffrée remplace toute valeur de champ.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/seal",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "itemId": "{{itemId}}",
+      "field": "password",
+      "origin": "https://example.test",
+      "publicKey": "{{rsaPublicKey}}"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "encryptedKey": "{{base64}}",
+      "nonce": "{{base64}}",
+      "tag": "{{base64}}",
+      "data": "{{base64}}"
+    }
+  }
+}

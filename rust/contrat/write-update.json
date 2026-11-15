@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "name": "write-update",
+  "description": "Une mise à jour ciblée renvoie la nouvelle date de révision.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/write",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "operationId": "{{operationId}}",
+      "action": "update",
+      "itemId": "{{itemId}}",
+      "expectedRevisionDate": "2026-11-08T00:00:00.000Z",
+      "patch": {
+        "name": "Renommée factice"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "id": "{{itemId}}",
+      "operationId": "{{operationId}}",
+      "verified": true,
+      "action": "update",
+      "revisionDate": "2026-11-08T00:01:00.000Z"
+    }
+  }
+}

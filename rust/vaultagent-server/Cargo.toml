@@ -1,0 +1,10 @@
+[package]
+name = "vaultagent-server"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Serveur VaultAgent : magasin chiffré, session, routes d'API et fichiers du front."
+
+[lints]
+workspace = true

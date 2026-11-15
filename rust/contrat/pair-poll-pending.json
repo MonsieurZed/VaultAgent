@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "name": "pair-poll-pending",
+  "description": "Sonder une demande non approuvée renvoie pending.",
+  "fixture": {
+    "vault": "locked",
+    "client": "none"
+  },
+  "steps": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/pair",
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body": {
+          "action": "request",
+          "name": "Client factice"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff"
+        },
+        "body": {
+          "requestId": "{{string}}",
+          "secret": "{{string}}"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/pair",
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body": {
+          "action": "poll",
+          "requestId": "{{step1.requestId}}",
+          "secret": "{{step1.secret}}"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff"
+        },
+        "body": {
+          "state": "pending",
+          "expiresInSeconds": "{{number}}"
+        }
+      }
+    }
+  ]
+}

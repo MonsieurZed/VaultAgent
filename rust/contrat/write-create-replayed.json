@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "name": "write-create-replayed",
+  "description": "Rejouer la même opération renvoie le reçu enregistré avec replayed.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "steps": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/agent/write",
+        "headers": {
+          "authorization": "{{token}}",
+          "content-type": "application/json"
+        },
+        "body": {
+          "operationId": "{{operationId}}",
+          "action": "create",
+          "item": {
+            "type": 1,
+            "name": "Nouvelle fiche factice",
+            "login": {
+              "username": "nouveau@example.invalid",
+              "password": "Fictif-nouveau-42!",
+              "totp": "FAKESEED",
+              "uris": [
+                {
+                  "uri": "https://example.test"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff"
+        },
+        "body": {
+          "id": "{{uuid}}",
+          "operationId": "{{operationId}}",
+          "verified": true,
+          "action": "create"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/agent/write",
+        "headers": {
+          "authorization": "{{token}}",
+          "content-type": "application/json"
+        },
+        "body": {
+          "operationId": "{{operationId}}",
+          "action": "create",
+          "item": {
+            "type": 1,
+            "name": "Nouvelle fiche factice",
+            "login": {
+              "username": "nouveau@example.invalid",
+              "password": "Fictif-nouveau-42!",
+              "totp": "FAKESEED",
+              "uris": [
+                {
+                  "uri": "https://example.test"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff"
+        },
+        "body": {
+          "id": "{{uuid}}",
+          "operationId": "{{operationId}}",
+          "verified": true,
+          "action": "create",
+          "replayed": true
+        }
+      }
+    }
+  ]
+}

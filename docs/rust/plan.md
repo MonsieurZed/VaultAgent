@@ -125,7 +125,7 @@ se fournissent par `--values-stdin` (un objet JSON `{username,password,totp,note
 | Id | But |
 |---|---|
 | 5.1 | Réécrire le skill `vault-agent` pour appeler `vaultagent` ; créer ses fiches de scénarios (`tests/scenarios/`, absentes aujourd'hui) puis les rejouer. |
-| 5.2 | Retirer le serveur Node, `remote-client/`, le client WinForms, `vault.mjs` ; mettre à jour README et `architecture.md`. |
+| 5.2 | Retirer le serveur Node, `remote-client/`, le client WinForms, `vault.mjs` et le test de contrat `linux/test/contract.test.mjs` (seule exception JS, accordée par Zed le 15/11/2026 pour la tâche 0.3) ; mettre à jour README et `architecture.md`. |
 | 5.3 | Publier la release, mettre à jour `stacks/maison/vaultagent` et `stacks/agents`. |
 
 ## Risques

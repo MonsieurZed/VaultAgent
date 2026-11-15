@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "name": "status-unlocked",
+  "description": "Un client associé lit l'état d'un coffre déverrouillé.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/status",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "vaultId": "default",
+      "unlocked": true,
+      "expiresUtc": "{{iso-date}}",
+      "approvalRequests": []
+    }
+  }
+}

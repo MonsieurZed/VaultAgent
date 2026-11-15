@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "name": "decide-unlock-not-approver",
+  "description": "Un client non approbateur ne peut pas décider d'un déverrouillage.",
+  "fixture": {
+    "vault": "locked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/decide-unlock",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "requestId": "x",
+      "approve": true,
+      "remember": false,
+      "signature": "x"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "approver-required"
+    }
+  }
+}

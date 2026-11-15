@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "name": "admin-owner-required",
+  "description": "Les routes d'administration exigent le propriétaire.",
+  "fixture": {
+    "vault": "locked",
+    "client": "none"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/api/admin/state"
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "owner-required"
+    }
+  }
+}

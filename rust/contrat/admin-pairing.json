@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "name": "admin-pairing",
+  "description": "Le propriétaire émet un code d'association préfixé par l'identifiant du coffre.",
+  "fixture": {
+    "vault": "locked",
+    "client": "none"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/admin/pairing",
+    "headers": {
+      "x-authentik-username": "{{owner}}",
+      "origin": "{{origin}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "name": "Client factice"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "code": "default.{{string}}",
+      "expiresInSeconds": 300
+    }
+  }
+}

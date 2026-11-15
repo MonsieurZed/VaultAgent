@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "name": "elevation-enroll-refused",
+  "description": "Un enrôlement d'élévation sans contexte ouvert est refusé.",
+  "fixture": {
+    "vault": "locked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/elevation-enroll",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "publicKey": "{{rsaPublicKey}}",
+      "signature": "x",
+      "elevationSignature": "x"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "elevation-enrollment-refused"
+    }
+  }
+}

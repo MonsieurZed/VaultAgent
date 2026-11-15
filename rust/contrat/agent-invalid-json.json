@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "name": "agent-invalid-json",
+  "description": "Un corps JSON invalide donne request-refused.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/status",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "rawBody": "{not json"
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "request-refused"
+    }
+  }
+}

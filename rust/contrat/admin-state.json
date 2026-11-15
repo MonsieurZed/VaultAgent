@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "name": "admin-state",
+  "description": "Le propriétaire lit l'état complet du coffre.",
+  "fixture": {
+    "vault": "locked",
+    "client": "none"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/api/admin/state",
+    "headers": {
+      "x-authentik-username": "{{owner}}"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "vaultId": "default",
+      "vaultName": "Coffre",
+      "version": "3.0.0-preview.7",
+      "configured": true,
+      "unlocked": false,
+      "timeoutMinutes": 15,
+      "expiresUtc": null,
+      "account": {
+        "server": "https://vault.example.test",
+        "email": "probe@example.invalid",
+        "timeoutMinutes": 15
+      },
+      "devices": [],
+      "unlockRequests": [],
+      "pairRequests": []
+    }
+  }
+}

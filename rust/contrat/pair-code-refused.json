@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "name": "pair-code-refused",
+  "description": "Un code d'association inconnu est refusé.",
+  "fixture": {
+    "vault": "locked",
+    "client": "none"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/pair",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "code": "default.code-factice-inconnu"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "pairing-refused"
+    }
+  }
+}

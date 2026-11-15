@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "name": "seal-invalid-field",
+  "description": "Un champ hors username, password et totp est refusé.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/seal",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "itemId": "{{itemId}}",
+      "field": "item",
+      "origin": "https://example.test",
+      "publicKey": "{{rsaPublicKey}}"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "invalid-field"
+    }
+  }
+}

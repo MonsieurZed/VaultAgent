@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "name": "agent-method-refused",
+  "description": "Une route agent exige POST, même avec un jeton valable.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/api/agent/status",
+    "headers": {
+      "authorization": "{{token}}"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "method-refused"
+    }
+  }
+}

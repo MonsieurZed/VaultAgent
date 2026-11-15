@@ -19,3 +19,6 @@ install-diagnostic.json
 *.tmp
 
 .passkey-sdk/
+
+# Rust
+rust/target/

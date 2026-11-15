@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "name": "write-invalid-write",
+  "description": "Une clé inconnue dans une écriture est refusée.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/write",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "operationId": "{{operationId}}",
+      "action": "create",
+      "item": {
+        "type": 1,
+        "name": "Fiche factice",
+        "login": {
+          "username": "nouveau@example.invalid",
+          "password": "Fictif-nouveau-42!",
+          "totp": "FAKESEED",
+          "uris": [
+            {
+              "uri": "https://example.test"
+            }
+          ]
+        }
+      },
+      "get": "password"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "invalid-write"
+    }
+  }
+}

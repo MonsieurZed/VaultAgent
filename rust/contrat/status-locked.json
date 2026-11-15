@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "name": "status-locked",
+  "description": "Un client associé lit l'état d'un coffre configuré et verrouillé.",
+  "fixture": {
+    "vault": "locked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/status",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "vaultId": "default",
+      "vaultName": "Coffre",
+      "version": "3.0.0-preview.7",
+      "configured": true,
+      "unlocked": false,
+      "timeoutMinutes": 15,
+      "expiresUtc": null,
+      "approvalSecurity": {
+        "registered": false,
+        "helloEnabled": false,
+        "elevationEnabled": false,
+        "helloEnrollmentAllowed": false,
+        "helloRequiredForAll": false,
+        "helloRequired": false
+      },
+      "unlockRequest": null,
+      "approvalRequests": []
+    }
+  }
+}

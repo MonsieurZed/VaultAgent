@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "name": "front-index",
+  "description": "La page d'accueil porte une politique de sécurité de contenu stricte.",
+  "fixture": {
+    "vault": "locked",
+    "client": "none"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/",
+    "headers": {
+      "x-authentik-username": "{{owner}}"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "no-referrer",
+      "content-security-policy": "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+    }
+  }
+}

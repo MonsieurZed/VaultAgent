@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "name": "write-create",
+  "description": "Une création renvoie un reçu vérifié avec la date de révision.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/write",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "operationId": "{{operationId}}",
+      "action": "create",
+      "item": {
+        "type": 1,
+        "name": "Nouvelle fiche factice",
+        "login": {
+          "username": "nouveau@example.invalid",
+          "password": "Fictif-nouveau-42!",
+          "totp": "FAKESEED",
+          "uris": [
+            {
+              "uri": "https://example.test"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "id": "{{uuid}}",
+      "operationId": "{{operationId}}",
+      "verified": true,
+      "action": "create",
+      "revisionDate": "2026-11-08T00:00:00.000Z"
+    }
+  }
+}

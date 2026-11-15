@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "name": "share-locked",
+  "description": "Un aperçu de partage exige un coffre déverrouillé.",
+  "fixture": {
+    "vault": "locked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/share",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "action": "preview",
+      "itemId": "{{itemId}}",
+      "organizationId": "00000000-0000-4000-8000-000000000009",
+      "collectionIds": [
+        "00000000-0000-4000-8000-000000000009"
+      ]
+    }
+  },
+  "response": {
+    "status": 423,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "locked"
+    }
+  }
+}

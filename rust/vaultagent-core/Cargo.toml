@@ -1,0 +1,10 @@
+[package]
+name = "vaultagent-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Logique pure de VaultAgent : formes et patchs d'écriture, idempotence, cycle de vie des fiches, signatures, empreintes."
+
+[lints]
+workspace = true

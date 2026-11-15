@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "name": "agent-route-refused",
+  "description": "Une route inconnue sous /api/agent/ est refusée.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/unknown",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "route-refused"
+    }
+  }
+}

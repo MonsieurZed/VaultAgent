@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "name": "pair-request",
+  "description": "Une demande d'association anonyme renvoie identifiant, secret et code de contrôle.",
+  "fixture": {
+    "vault": "locked",
+    "client": "none"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/pair",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "action": "request",
+      "name": "Client factice"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "requestId": "{{string}}",
+      "secret": "{{string}}",
+      "verification": "{{string}}",
+      "expiresInSeconds": 300
+    }
+  }
+}

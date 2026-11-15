@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "name": "request-unlock-unlocked",
+  "description": "Un coffre déjà déverrouillé le dit sans créer de demande.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/request-unlock",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "state": "unlocked",
+      "unlocked": true
+    }
+  }
+}

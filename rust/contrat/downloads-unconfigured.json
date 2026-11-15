@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "name": "downloads-unconfigured",
+  "description": "Sans dossier de téléchargements configuré, la route tombe dans le refus d'origine.",
+  "fixture": {
+    "vault": "locked",
+    "client": "none"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/downloads/windows-client.zip",
+    "headers": {
+      "x-authentik-username": "{{owner}}"
+    }
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "origin-refused"
+    }
+  }
+}

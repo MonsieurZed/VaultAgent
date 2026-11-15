@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "name": "write-create-folder",
+  "description": "La création d'un dossier renvoie un reçu vérifié sans date de révision.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/write",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "operationId": "{{operationId}}",
+      "action": "create-folder",
+      "item": {
+        "name": "Nouveau dossier factice"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "id": "{{uuid}}",
+      "operationId": "{{operationId}}",
+      "verified": true,
+      "action": "create-folder"
+    }
+  }
+}

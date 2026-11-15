@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "name": "catalog-unlocked",
+  "description": "Le catalogue ne donne que des booléens de présence et des origines.",
+  "fixture": {
+    "vault": "unlocked",
+    "client": "paired"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/catalog",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": [
+      {
+        "id": "{{itemId}}",
+        "name": "Compte factice",
+        "organizationId": null,
+        "collectionIds": [],
+        "origins": [
+          "https://example.test"
+        ],
+        "username": true,
+        "password": true,
+        "totp": true
+      }
+    ]
+  }
+}

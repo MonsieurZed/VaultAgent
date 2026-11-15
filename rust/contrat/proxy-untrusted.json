@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "name": "proxy-untrusted",
+  "description": "Une adresse distante autre que le proxy de confiance est refusée.",
+  "fixture": {
+    "vault": "locked",
+    "client": "paired",
+    "proxy": "untrusted"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/status",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "proxy-required"
+    }
+  }
+}
