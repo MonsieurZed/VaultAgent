@@ -9,7 +9,7 @@ les dépendances prévues et leurs justifications dans [`DEPENDANCES.md`](DEPEND
 | `vaultagent-core` | Logique pure, sans fichier, réseau ni horloge. |
 | `vaultagent-engine` | Trait `Engine` typé, types de domaine, faux moteur, moteur natif `sdk` sur le SDK Bitwarden (connexion et lectures en 2.1c, écritures en 2.1d). Licence GPL-3.0-only. |
 | `vaultagent-server` | Magasin chiffré, session, routes d'API (Linux). |
-| `vaultagent-client` | Binaire `vaultagent` : association, lecture, écriture, remplissage. |
+| `vaultagent-client` | Binaire `vaultagent` : association, lecture (3.1, 3.2), écriture, remplissage (à venir). |
 | `vaultagent-win32` | Seule crate autorisée à utiliser `unsafe` (Windows uniquement), déclarée dans son `Cargo.toml`. |
 
 ## Commandes
@@ -272,3 +272,74 @@ binaire par `include_str!`, `assets/style.css`). Le front de `linux/web/` n'est 
 Tests 2.4b : `front_pages` (onglets en trois langues, échappement, champs vides, aucun script, rafraîchissement, cookie), `front_actions`
 (origine, propriétaire, corps, chaque action, page du code), tests unitaires de chaque module, `transport` (`GET /` sur socket réel).
 Le cas doré `front-index` décrit la nouvelle page (CSP sans script) ; les 48 autres sont inchangés.
+
+## Binaire Linux du client (tâche 3.7)
+
+Construit sur la VM Agents dans `rust:1.100.0-bookworm` (`cargo build --release -p vaultagent-client`, 4,7 Mo, glibc), installé
+dans `~/.local/opt/vaultagent-rust/vaultagent` à côté du client Node (`~/.local/bin/vaultagent-client`, inchangé). Il relit
+`~/.config/vaultagent/client.json` sans nouvelle association. Vérifié le 16/11/2026 sur le serveur réel : `status` (0), `vaults`,
+`catalog` verrouillé (4, `locked`), origine invalide (1, `usage`). Le remplacement du lien `~/.local/bin` est l'affaire de la phase 5.
+
+## `vaultagent-client` : configuration, association, lectures, écritures, déverrouillage, `seal`, aide (tâches 3.1 à 3.6)
+
+Bibliothèque `vaultagent_client` et binaire `vaultagent`. Dépend de `vaultagent-core` (`HttpsAddress`, `https_origin`, `parse_bearer`, `Uuid`), `serde`, `serde_json`, `zeroize`, `ureq` (rustls, magasin de certificats du système) et `clap`.
+Remplace `remote-client/cli.mjs` et `agent-tools.mjs` pour Linux ; le remplissage de champ de navigateur (Playwright) n’existe pas en Rust : `fill_with` en est la brique.
+
+```
+vaultagent [--config <fichier>] [--vault <id>] pair-request <https-serveur> [nom]
+vaultagent [--config <fichier>] [--vault <id>] status | vaults | sharing | catalog [recherche] | preview [id]
+vaultagent create --operation-id <uuid> --metadata <json> [--values-stdin]
+vaultagent update <itemId> --operation-id <uuid> --expected-revision <date> [--organization-id <uuid>] [--metadata <json>] [--values-stdin]
+vaultagent delete | restore <itemId> --operation-id <uuid> --expected-revision <date> [--organization-id <uuid>]
+vaultagent folder create <nom> | rename <folderId> <nom> | delete <folderId>   (chacun avec --operation-id <uuid>)
+vaultagent [--vault <id>] unlock [--wait <secondes 0-300>] | lock
+vaultagent [--vault <id>] seal <itemId> <username|password|totp> <origine-https> --public-key <spki-base64>
+```
+
+- **Configuration** : `~/.config/vaultagent/client.json` = `{"server","token"}`, identique au client Node (une VM déjà associée n'a rien à refaire). `--config` la remplace ; sous Windows il est obligatoire (DPAPI en phase 4).
+  Sous Unix, le fichier est refusé si `mode & 0o077` n'est pas nul ou si son propriétaire n'est pas l'utilisateur courant (uid lu sans `unsafe` sur le propriétaire de `/proc/self`, Linux ; ailleurs, le mode seul). Écriture atomique : dossier `0700`, temporaire `0600`, `rename`.
+- **Sorties** : stdout, le corps JSON du serveur sur une ligne. stderr, une ligne `{"version":1,"error":"<code>","message":"<texte>"}` (code du protocole repris : `locked`, `vault-required`, `unauthorized`…, sinon `usage`, `config`, `unreachable`, `indeterminate`, `bad-response`, `pairing-denied`, `pairing-expired`).
+- **Codes de sortie** : 0 succès, 1 usage ou donnée invalide, 2 refus du serveur, 3 cible refusée (réservé à la saisie), 4 coffre verrouillé (HTTP 423), 5 résultat indéterminé (délai ou coupure après l'envoi).
+- **Délais** : connexion 10 s, requête 110 s, association 15 s ; redirections refusées ; réponse de 4 Mio au plus. Adresse : `https` seulement, sans identifiants, chemin `/`, ni requête ni fragment.
+- **`pair-request`** : affiche le code de vérification sur stderr, interroge toutes les 2 s jusqu'à l'expiration de la demande, puis enregistre la configuration et écrit `{"paired":true,"vaultId":…}`. Nom par défaut : `/etc/hostname`, sinon `HOSTNAME`, `COMPUTERNAME`.
+
+| Module | Rôle |
+|---|---|
+| `exit_code`, `error` | `ExitCode` (0 à 5), `ClientError` (code, message sans secret, code de sortie, `error_line`). |
+| `server_address`, `token` | `ServerAddress` (origine validée), `Token` (`Zeroizing`, `Debug` masqué, forme `va1.<uuid>.<43>`). |
+| `config`, `config_path`, `private_file` | `ClientConfig::load`/`save`, emplacement (`--config`, `HOME`), contrôle de permissions et écriture atomique. |
+| `transport`, `https_transport`, `fake_transport` | Trait `Transport` (`post(chemin, bearer, corps, délai)`), `HttpsTransport` sur `ureq`, `FakeTransport` (réponses scriptées, journal des requêtes, sans réseau). |
+| `api` | `agent_call`, `pair_call`, `classify` (statut HTTP vers erreur typée), `map_transport`. |
+| `pairing`, `pairing_wire`, `pause`, `machine_name` | `pair_request` (attente `Pause` injectée, `RecordedPause` pour les tests), corps serde de `/api/pair`, nom de machine. |
+| `write`, `write_args`, `write_body`, `write_metadata`, `write_values` | `WriteCommand` (7 écritures, corps identiques à `agent-tools.mjs`), arguments `clap`, structures `serde` du corps `write`, clés de métadonnées admises (création : `type`, `name`, `folderId`, `login.uris`, `organizationId`, `collectionIds` ; mise à jour : `name`, `folderId`, `addUris`, `removeUris`), `SecretValues` (entrée standard 64 Kio, `Debug` masqué, effacement au `Drop`). |
+| `unlock` | `unlock` (attente bornée, `Pause` injectée, durée comptée par les pauses) et `lock`. |
+| `reads`, `cli`, `run` | `ReadCommand` (routes `status`, `vaults`, `sharing`, `catalog`, `write-preview`), définition `clap`, `run` (stdout, stderr, code de sortie) avec `Runtime` injecté. |
+| `seal`, `fill` | `SealArgs`, `check_target`, `seal_body`, `run_seal` (commande `seal`) ; `fill_with` (brique des remplissages de la phase 4) et `FillReport`. |
+| `help` | Textes d'aide anglais : tableau des codes de sortie (aide générale) et un exemple par commande. |
+
+- **`seal <itemId> <field> <origin> --public-key <spki>`** : aucune valeur en clair ne sort du binaire (une valeur sur stdout irait au modèle). Valide sans réseau : `itemId` UUID, `field` parmi `username`, `password`, `totp`, `origin` = origine HTTPS exacte (sans chemin ni barre finale), clé SPKI RSA de 2048 à 4096 bits (essai de scellement d'une valeur vide par `vaultagent_core::seal`, aucune crypto écrite ici). Puis relaie `seal` et écrit l'enveloppe `{encryptedKey, nonce, tag, data}` telle que le serveur l'a rendue ; seul le détenteur de la clé privée peut l'ouvrir.
+- **`fill_with(transport, config, vault, item, field, origin, sink)`** : valide, génère une paire RSA 2048, appelle `seal`, ouvre l'enveloppe (`open_envelope`) et passe la valeur au `sink` (`FnOnce(&Zeroizing<String>) -> Result<(), ClientError>`). Rend `{"filled":true,"field":…,"clipboardUsed":false}` ; clé privée (`ZeroizeOnDrop`) et valeur effacées à la sortie. Enveloppe illisible : `bad-response`.
+- **Aide** : `--help` de chaque commande en anglais avec un exemple ; l'aide générale porte le tableau des codes de sortie ; `--version`. Aide et version sortent sur stdout (code 0). Sinon stdout ne reçoit que le JSON du serveur ou l'enveloppe, jamais autre chose.
+- **Aucune dépendance nouvelle** : `base64` et `rsa` ne sont pas entrées dans la crate (tout passe par `vaultagent-core`).
+
+Codes d'erreur du client (ligne `{"version":1,"error":<code>,…}` sur stderr) :
+
+| Code | Sens | Sortie |
+|---|---|---|
+| `usage` | Argument, commande ou donnée invalide ; rien n'est envoyé. | 1 |
+| `config` | Configuration absente, illisible, non privée ou jeton mal formé. | 1 |
+| `locked` | Coffre verrouillé (HTTP 423). | 4 |
+| `indeterminate` | Délai ou coupure après l'envoi, ou écriture sans réponse (garder l'`operationId`, relire `preview`). | 5 |
+| `write-indeterminate` | Le serveur signale une écriture au résultat inconnu. | 5 |
+| `unreachable` | Rien n'a été envoyé : résolution, connexion refusée ou certificat refusé. | 2 |
+| `bad-response` | Réponse invalide, redirigée, de plus de 4 Mio, ou enveloppe illisible. | 2 |
+| `pairing-denied` | Association refusée par l'administrateur. | 2 |
+| `pairing-expired` | Association expirée sans réponse. | 2 |
+| autre code du protocole | Refus du serveur repris tel quel (`vault-required`, `unauthorized`, `origin-refused`, `invalid-field`, `invalid-key`…, sinon `request-refused`). | 2 |
+
+Le code 3 (cible refusée) n'est rendu que par les commandes de saisie de la phase 4.
+
+- **Écritures** : `--operation-id` obligatoire et fourni par l'appelant (jamais généré). Le reçu part sur stdout tel quel. Les métadonnées ne portent aucun secret (clé hors liste : code 1, « secrets belong in --values-stdin ») ; les secrets (`username`, `password`, `totp`, `notes`) passent seulement par `--values-stdin` (objet JSON, 64 Kio au plus ; pour un `type` différent de 1, `notes` seul). Rien n'est envoyé si un argument est invalide. Délai ou coupure après l'envoi, ou `write-indeterminate` du serveur : code 5 et message « garder l'operationId et relire preview avant toute reprise », sans jamais rappeler une valeur.
+- **`unlock [--wait <s>]`** : attente de 0 à 300 s (sinon code 1), `request-unlock` puis, si `pending` ou `approving`, `status` toutes les 2 s jusqu'à l'échéance ; jamais de nouvelle demande après refus ou expiration. Sortie de `agent-tools.mjs` (`{requestId, state, unlocked}` et champs repris) ; code 0 déverrouillé, 4 verrouillé (`waiting`, `expired`, demande en attente sans attente), 2 `denied` ou `failed`. **`lock`** : rend `{"locked":true}`.
+
+Tests : `seal_commands` (aller-retour factice avec sentinelle absente de toute sortie, refus de champ, d’origine, d’UUID et de clé, enveloppe relayée telle quelle, code 4), `exit_codes` (codes 0, 1, 2, 4, 5 et forme stdout/stderr, bibliothèque), `binary` (vrai binaire : aide et tableau des codes, exemples, serveur injoignable = code 2, usage), unitaires par module, `write_commands` (un test par commande et par corps, refus des métadonnées et entrées invalides, sentinelle absente de stdout et stderr, code 5), `unlock_commands` (immédiat, approuvé pendant l'attente, refusé, échoué, expiré, échéance, attente hors bornes, `lock`), `golden_writes` (cas dorés `write-create`, `write-update`, `write-delete`, `write-create-folder`, `request-unlock-*`, `lock`), `run_commands` (commandes de bout en bout sur faux serveur, association approuvée, refusée et expirée, jeton absent de toute sortie), `golden_reads` (rejeu des cas dorés `status-*`, `vaults`, `catalog-*`, `sharing-locked`, `write-preview-*`, `agent-unauthorized`, corps de `pair-request`), `binary` (vrai binaire : usage, aide, version). Les tests de permissions Unix (`0600`, `0700`, refus de `0644`) sont sous `#[cfg(unix)]` : ils ne s'exécutent que sous Linux.
