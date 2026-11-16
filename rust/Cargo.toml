@@ -36,3 +36,16 @@ getrandom = { version = "0.2", default-features = false }
 rand_core = { version = "0.6", default-features = false }
 zeroize = { version = "1", default-features = false, features = ["std"] }
 base64 = { version = "0.22", default-features = false, features = ["std"] }
+bitwarden-core = { git = "https://github.com/bitwarden/sdk-internal", rev = "6238472451e4fa7b5c592b4b24a84e950a258957", features = ["internal"] }
+bitwarden-crypto = { git = "https://github.com/bitwarden/sdk-internal", rev = "6238472451e4fa7b5c592b4b24a84e950a258957" }
+bitwarden-auth = { git = "https://github.com/bitwarden/sdk-internal", rev = "6238472451e4fa7b5c592b4b24a84e950a258957" }
+bitwarden-vault = { git = "https://github.com/bitwarden/sdk-internal", rev = "6238472451e4fa7b5c592b4b24a84e950a258957" }
+bitwarden-sync = { git = "https://github.com/bitwarden/sdk-internal", rev = "6238472451e4fa7b5c592b4b24a84e950a258957" }
+bitwarden-state = { git = "https://github.com/bitwarden/sdk-internal", rev = "6238472451e4fa7b5c592b4b24a84e950a258957" }
+bitwarden-collections = { git = "https://github.com/bitwarden/sdk-internal", rev = "6238472451e4fa7b5c592b4b24a84e950a258957" }
+bitwarden-api-api = { git = "https://github.com/bitwarden/sdk-internal", rev = "6238472451e4fa7b5c592b4b24a84e950a258957" }
+bitwarden-pm = { git = "https://github.com/bitwarden/sdk-internal", rev = "6238472451e4fa7b5c592b4b24a84e950a258957" }
+tokio = { version = "1", default-features = false, features = ["rt"] }
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "json"] }
+async-trait = "0.1"
+tiny_http = { version = "0.12", default-features = false }

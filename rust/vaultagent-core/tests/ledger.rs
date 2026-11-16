@@ -163,6 +163,7 @@ fn receipt_json_carries_only_protocol_fields_and_no_secret() {
     assert!(!text.contains(canary));
     assert!(!print.contains(canary));
     let stored: Value = serde_json::from_str(&text).unwrap();
-    let keys: Vec<&String> = stored[operation.key()]["receipt"].as_object().unwrap().keys().collect();
+    let mut keys: Vec<&String> = stored[operation.key()]["receipt"].as_object().unwrap().keys().collect();
+    keys.sort();
     assert_eq!(keys, ["action", "id", "operationId", "revisionDate", "verified"]);
 }

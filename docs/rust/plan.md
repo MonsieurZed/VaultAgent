@@ -1,8 +1,9 @@
 # VaultAgent en Rust — conception et tâches
 
 Décision de Zed du 2026-11-15 : réécrire en Rust le **serveur Linux**, les **clients Node** et le **client
-Windows**, avec une **interface en ligne de commande** pour les agents. Le moteur Bitwarden
-(`fork/agent.ts`, SDK TypeScript officiel) **reste tel quel** : il devient un processus enfant du serveur Rust.
+Windows**, avec une **interface en ligne de commande** pour les agents. Décision du 2026-11-16 : **que du
+Rust**. Le moteur Bitwarden (`fork/agent.ts`) est remplacé par un moteur Rust natif sur les crates du SDK
+officiel (`docs/decisions/2026-11-16-moteur-rust.md`) ; le serveur ne lance plus Node.
 
 ## Principes
 
@@ -22,12 +23,13 @@ Espace de travail cargo `rust/` dans ce dépôt (`rust-toolchain.toml`, édition
 | Crate | Rôle | Plateformes |
 |---|---|---|
 | `vaultagent-core` | Logique pure : formes et patchs d'écriture, registre d'idempotence (trait de stockage), cycle de vie des fiches, demandes d'association, demandes de déverrouillage, signatures RSA-PSS, empreintes. Ni fichier, ni réseau, ni horloge. | toutes |
-| `vaultagent-engine` | Processus enfant Node : protocole JSON ligne à ligne de `fork/agent.ts` (op `call`, `safe-update`, `sharing-*`…). | toutes |
+| `vaultagent-engine` | Moteur Bitwarden natif (crates `sdk-internal`, GPL-3.0) : trait `Engine` typé, runtime tokio interne derrière une façade bloquante, faux moteur pour les tests. | toutes |
 | `vaultagent-server` | Bibliothèque + binaire : magasin chiffré, session, routes `/api/agent/*`, `/api/admin/*`, `/api/pair`, fichiers du front. | Linux |
 | `vaultagent-client` | Bibliothèque + binaire `vaultagent` : association, lecture, écriture, déverrouillage, remplissage. Sorties JSON versionnées, codes de sortie stables. | toutes |
 | `vaultagent-win32` | **Seule crate où `unsafe` est autorisé** : identité et premier plan des fenêtres, `SendInput`, DPAPI, clés NCrypt, WebAuthn Hello, icône de barre et carte d'approbation. Chaque bloc `unsafe` est justifié. | Windows |
 
-Le front web du serveur (`linux/web/`, JS exécuté dans le navigateur) est corrigé en place, pas étendu ni réécrit.
+Le front web du serveur (`linux/web/`) est remplacé par du HTML rendu par `vaultagent-server` (formulaires
+classiques), sans aucun JS : le front n'appelle pas WebAuthn, Hello passe par le client Windows.
 
 ### Interface en ligne de commande (`vaultagent`)
 
@@ -90,11 +92,16 @@ se fournissent par `--values-stdin` (un objet JSON `{username,password,totp,note
 
 | Id | But | Test |
 |---|---|---|
-| 2.1 | `vaultagent-engine` : enfant Node, protocole ligne à ligne, délais, redémarrage ; faux moteur pour les tests. | `engine-smoke` rejoué sur compte factice |
+| 2.1 | ~~Enfant Node~~ : fait le 16/11 puis rendu caduc par la décision « que du Rust » ; son code (`node_engine.rs`, `node_factory.rs`, `connect.rs`…) est retiré en 2.1b. | — |
+| 2.1a | Prototype hors dépôt (`D:\claude-tmp`) : SDK épinglé, connexion, sync, liste et lecture d'une fiche contre Vaultwarden sur un compte factice. Résultat noté dans la décision du 16/11. | exécution réelle |
+| 2.1b | Trait `Engine` typé (une méthode par opération, erreurs `stage:category` conservées), faux moteur, adaptation de `vaultagent-server` ; retrait du pilote Node. | suite complète, faux moteur |
+| 2.1c | Moteur SDK : prélogin et jeton avec 2FA, crypto au déverrouillage, verrouillage avec purge, dépôts en mémoire, sync, liste, recherche, lecture, TOTP, dossiers. | intégration sur compte factice |
+| 2.1d | Moteur SDK : création, mise à jour avec contrôle de révision, corbeille, restauration, organisations, collections, partage, passkeys. | intégration sur compte factice |
 | 2.2 | Magasin chiffré, session, verrouillage, expiration. | `service.test` |
-| 2.3 | Routes agent : `status`, `vaults`, `catalog`, `write-preview`, `write`, `sharing`, `share`, `seal`, `request-unlock`, `lock`. | cas dorés 0.3 |
-| 2.4 | Routes admin et association, en-tête Authentik, fichiers du front, téléchargements. | `client.test`, `pair-requests.test` |
-| 2.5 | Image Docker (moteur Node + binaire Rust), parité : mêmes requêtes sur le serveur Node et le serveur Rust, mêmes réponses. | script de parité en CI locale |
+| 2.3 | Routes agent : `status`, `vaults`, `catalog`, `write-preview`, `write`, `sharing`, `share`, `seal`, `request-unlock`, `lock` (après 2.1b, ∥ avec 2.1c et 2.1d). | cas dorés 0.3 |
+| 2.4a | Routes admin JSON et association, en-tête Authentik, téléchargements ; binaire `vaultagent-server` sur `tiny_http` autour de `route()`. | `client.test`, `pair-requests.test`, 10 cas dorés restants |
+| 2.4b | Front en HTML rendu par Rust, **sans JS** (le front n'appelle pas WebAuthn) : formulaires POST puis redirection, langue fr/en/es, rafraîchissement par `meta refresh`, contrôle d'origine sur chaque formulaire. Remplace `linux/web/`. | rendu et formulaires testés |
+| 2.5 | Image Docker (binaire Rust seul, sans Node), parité : mêmes requêtes sur le serveur Node et le serveur Rust, mêmes réponses. | script de parité en CI locale |
 | 2.6 | Déploiement à côté de l'ancien (tag d'image distinct), bascule, retour arrière documenté. Accord de Zed requis. | vérification sur le coffre de test puis réel |
 
 ### Phase 3 — Client et CLI (∥ avec la phase 2 dès 0.3)
@@ -133,10 +140,16 @@ se fournissent par `--values-stdin` (un objet JSON `{username,password,totp,note
 | Phase | État | Tests |
 |---|---|---|
 | 0 | Terminée le 15/11/2026 (`9622396`) | 49 cas dorés rejoués contre Node |
-| 1 | Terminée le 15/11/2026 : `vaultagent-core` complet (1.1 à 1.5) | 203 tests Rust, 102 tests Node |
+| 1 | Terminée le 15/11/2026 : `vaultagent-core` complet (1.1 à 1.5) (`e3bf8d1`) | 203 tests Rust, 102 tests Node |
+| 2 | En cours : 2.1 (`vaultagent-engine`) et 2.2 (`vaultagent-server` : magasin, session, coffres) faites et vérifiées le 16/11/2026, non commitées (commit prévu en fin de phase). 16/11 : décision « que du Rust », phase 2 redécoupée (2.1a à 2.1d) ; 2.1a faite (prototype GO), 2.1b faite (trait `Engine` typé, faux moteur, pilote Node retiré) ; 2.1c et 2.1d faites ; 2.3 faite le 16/11/2026 (routes agent, cœur HTTP pur `route()`, 39 cas dorés rejoués) ; 2.4a faite le 16/11/2026 (routes administrateur, association, téléchargements, front Node servi tel quel, binaire sur `tiny_http`, 49 cas dorés rejoués) ; 2.4a faite ; 2.4b faite le 16/11/2026 (front HTML sans JavaScript rendu par Rust, formulaires POST /admin/*, 49 cas dorés rejoués dont front-index mis à jour) ; suivant : 2.5 | 341 tests Rust |
 
 ## Risques
 
+- **SDK contre Vaultwarden** : non documenté et interface amont instable ; la tâche 2.1a tranche avant tout
+  investissement, et chaque montée du commit épinglé rejoue l'intégration.
+- **Délais HTTP** : `tiny_http` 0.12 n'expose pas le `TcpStream`, donc ni délai d'en-têtes ni délai de requête ;
+  un client qui cale en plein corps bloque un fil de travail. Le proxy Caddy en amont borne les délais : à
+  vérifier en 2.5 (réglages `timeouts` de Caddy), sinon revoir la bibliothèque HTTP par une décision.
 - **Parité fine** : les 3 tests serveur déjà en échec (`client.test`, `hello.test`) sont corrigés en Node avant de
   servir de référence.
 - **Windows Hello** est indisponible sur TowerZ : la tâche 4.4 peut se limiter à la vérification serveur.

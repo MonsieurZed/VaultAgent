@@ -3,8 +3,26 @@ name = "vaultagent-engine"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-license.workspace = true
-description = "Processus enfant Node de VaultAgent : protocole JSON ligne à ligne, délais et redémarrage."
+license = "GPL-3.0-only"
+description = "Moteur Bitwarden de VaultAgent : trait typé, types de domaine, faux moteur des tests et moteur natif sur le SDK Bitwarden."
 
 [lints]
 workspace = true
+
+[dependencies]
+vaultagent-core = { path = "../vaultagent-core" }
+serde.workspace = true
+serde_json.workspace = true
+zeroize.workspace = true
+bitwarden-core.workspace = true
+bitwarden-crypto.workspace = true
+bitwarden-auth.workspace = true
+bitwarden-vault.workspace = true
+bitwarden-sync.workspace = true
+bitwarden-state.workspace = true
+bitwarden-collections.workspace = true
+bitwarden-api-api.workspace = true
+bitwarden-pm.workspace = true
+tokio.workspace = true
+reqwest.workspace = true
+async-trait.workspace = true
