@@ -5102,6 +5102,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "vaultagent-parity"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "vaultagent-core",
+]
+
+[[package]]
 name = "vaultagent-server"
 version = "0.1.0"
 dependencies = [

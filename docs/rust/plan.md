@@ -101,8 +101,9 @@ se fournissent par `--values-stdin` (un objet JSON `{username,password,totp,note
 | 2.3 | Routes agent : `status`, `vaults`, `catalog`, `write-preview`, `write`, `sharing`, `share`, `seal`, `request-unlock`, `lock` (après 2.1b, ∥ avec 2.1c et 2.1d). | cas dorés 0.3 |
 | 2.4a | Routes admin JSON et association, en-tête Authentik, téléchargements ; binaire `vaultagent-server` sur `tiny_http` autour de `route()`. | `client.test`, `pair-requests.test`, 10 cas dorés restants |
 | 2.4b | Front en HTML rendu par Rust, **sans JS** (le front n'appelle pas WebAuthn) : formulaires POST puis redirection, langue fr/en/es, rafraîchissement par `meta refresh`, contrôle d'origine sur chaque formulaire. Remplace `linux/web/`. | rendu et formulaires testés |
-| 2.5 | Image Docker (binaire Rust seul, sans Node), parité : mêmes requêtes sur le serveur Node et le serveur Rust, mêmes réponses. | script de parité en CI locale |
-| 2.6 | Déploiement à côté de l'ancien (tag d'image distinct), bascule, retour arrière documenté. Accord de Zed requis. | vérification sur le coffre de test puis réel |
+| 2.5a | Image Docker `rust/Dockerfile` (binaire Rust seul, sans Node), sonde `healthcheck` en Rust, étape de test qui lance `cargo test` sous Linux (dont le test des permissions Unix), image démarrée contre le Vaultwarden jetable. | build et suite sous Linux, essai réel |
+| 2.5b | Outil de parité en Rust : mêmes requêtes sur le serveur Node et le serveur Rust (admin, association, routes agent signées), mêmes réponses aux champs variables près. | parité sur le Vaultwarden jetable |
+| 2.6 | Déploiement à côté de l'ancien (tag d'image distinct), bascule, retour arrière documenté ; Caddy du stack : `request_buffers` dans `reverse_proxy` et délais `read_header` et `read_body` (limite de `tiny_http`). Accord de Zed requis. | vérification sur le coffre de test puis réel |
 
 ### Phase 3 — Client et CLI (∥ avec la phase 2 dès 0.3)
 
@@ -141,7 +142,7 @@ se fournissent par `--values-stdin` (un objet JSON `{username,password,totp,note
 |---|---|---|
 | 0 | Terminée le 15/11/2026 (`9622396`) | 49 cas dorés rejoués contre Node |
 | 1 | Terminée le 15/11/2026 : `vaultagent-core` complet (1.1 à 1.5) (`e3bf8d1`) | 203 tests Rust, 102 tests Node |
-| 2 | En cours : 2.1 (`vaultagent-engine`) et 2.2 (`vaultagent-server` : magasin, session, coffres) faites et vérifiées le 16/11/2026, non commitées (commit prévu en fin de phase). 16/11 : décision « que du Rust », phase 2 redécoupée (2.1a à 2.1d) ; 2.1a faite (prototype GO), 2.1b faite (trait `Engine` typé, faux moteur, pilote Node retiré) ; 2.1c et 2.1d faites ; 2.3 faite le 16/11/2026 (routes agent, cœur HTTP pur `route()`, 39 cas dorés rejoués) ; 2.4a faite le 16/11/2026 (routes administrateur, association, téléchargements, front Node servi tel quel, binaire sur `tiny_http`, 49 cas dorés rejoués) ; 2.4a faite ; 2.4b faite le 16/11/2026 (front HTML sans JavaScript rendu par Rust, formulaires POST /admin/*, 49 cas dorés rejoués dont front-index mis à jour) ; suivant : 2.5 | 341 tests Rust |
+| 2 | En cours : 2.1 (`vaultagent-engine`) et 2.2 (`vaultagent-server` : magasin, session, coffres) faites et vérifiées le 16/11/2026, non commitées (commit prévu en fin de phase). 16/11 : décision « que du Rust », phase 2 redécoupée (2.1a à 2.1d) ; 2.1a faite (prototype GO), 2.1b faite (trait `Engine` typé, faux moteur, pilote Node retiré) ; 2.1c et 2.1d faites ; 2.3 faite le 16/11/2026 (routes agent, cœur HTTP pur `route()`, 39 cas dorés rejoués) ; 2.4a faite le 16/11/2026 (routes administrateur, association, téléchargements, front Node servi tel quel, binaire sur `tiny_http`, 49 cas dorés rejoués) ; 2.4a faite ; 2.4b faite le 16/11/2026 (front HTML sans JavaScript rendu par Rust, formulaires POST /admin/*, 49 cas dorés rejoués dont front-index mis à jour) ; 2.5a faite ; 2.5b faite ; suivant : 2.6 (accord de Zed) | 341 tests Rust |
 
 ## Risques
 

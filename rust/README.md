@@ -190,6 +190,56 @@ cargo run -p vaultagent-server
 Tests 2.4a : `routes_admin` et `routes_files` (sans socket), `transport` (vrais sockets sur `127.0.0.1:0`, faux moteur, client `TcpStream` :
 parcours configure, code, association, statut agent, front ; proxy ; limites ; connexion inactive). `tests/golden.rs` rejoue les 49 cas.
 
+## `vaultagent-server` : image Docker et sonde de santé (tâche 2.5a)
+
+`rust/Dockerfile` : le contexte est la **racine du dépôt** (le Dockerfile copie `rust/` et les trois fichiers de licence).
+Étapes : `base` (`rust:1.100.0-bookworm` épinglée par digest, copie de `rust/`), `test` (`cargo test --locked -j 2`, puis
+`rm -rf target` dans la même couche, sinon la couche du dossier `target` sature le disque), `builder`
+(`cargo build --release --locked -p vaultagent-server`), puis l'image finale `debian:bookworm-slim` (digest) avec
+`ca-certificates`, le binaire `/usr/local/bin/vaultagent-server`, `LICENSE`, `LICENSE-GPL.txt` et `THIRD-PARTY.md` dans `/app`.
+`USER 1000:1000`, `EXPOSE 8080`, `/data` appartient à 1000. Aucun script ni Node ; `assets/style.css` est dans le binaire.
+Le Docker de la VM Agents n'a pas BuildKit : `DOCKER_BUILDKIT=0`, `rust/Dockerfile.dockerignore` n'y est alors pas lu, c'est
+l'archive envoyée qui exclut `target`.
+
+```
+docker build --target test -f rust/Dockerfile .
+docker build -f rust/Dockerfile -t vaultagent-rust:2.5a .
+```
+
+`vaultagent-server healthcheck` (module `healthcheck`) : `GET /healthz` sur `127.0.0.1:$VAULTAGENT_PORT` (8080 par défaut)
+par `TcpStream` (délai de 3 s), code de sortie 0 si le statut est 200, sinon 1. C'est le `HEALTHCHECK` de l'image.
+Tests : modules `#[cfg(test)]` (200, 503, réponse invalide, port fermé, port par défaut) et `tests/healthcheck.rs` (contre `serve`).
+
+## `vaultagent-parity` : outil de parité Node et Rust (tâche 2.5b)
+
+Crate `publish = false`, hors de l'image. Elle joue le même scénario (60 requêtes) sur le serveur Node et le serveur Rust,
+par `TcpStream` en clair vers deux ports locaux (tunnels ssh), puis compare statut, en-têtes `content-type`,
+`cache-control`, `x-content-type-options` et corps. Scénario : `healthz`, admin (`state`, `configure`, `unlock`, `pairing`),
+association par demande (`pair-request`, `poll`, `pair-decide`) et par code, routes agent (`status`, `vaults`, `catalog`,
+`write-preview`, `write` créer, rejouer, mettre à jour, supprimer, `seal` ouvert avec la clé de test, `sharing`, `share`
+en aperçu, `lock`, `request-unlock`, `decide-unlock` signé RSA-PSS), erreurs (origine, JSON requis, route, méthode,
+non autorisé, propriétaire), `revoke` et `lock`. Les clés, signatures et enveloppes viennent de `vaultagent-core`
+(`rsa_keys` : `generate_rsa`, `public_key_spki`, `sign_pss`, `sign_decision`).
+
+Normalisation (`normalize.rs`) : jetons, secrets, UUID, dates, codes, empreintes, `requestId` aléatoires et nombres variables
+deviennent des marqueurs ; les listes de fiches, dossiers, collections et organisations sont triées (l'ordre n'est pas
+garanti par le protocole). Un écart affiche l'étape, le chemin et les deux valeurs normalisées, jamais un secret.
+Écarts acceptés (`accepted.rs`) : le faux dossier `No Folder` que Node ajoute à `write-preview` (artefact de la CLI Bitwarden).
+
+```
+ssh -N -L 8390:127.0.0.1:8390 -L 8391:127.0.0.1:8391 monsieurz@10.10.60.10
+cargo run --release -p vaultagent-parity -- --node http://127.0.0.1:8391 --rust http://127.0.0.1:8390 [--trace] [--pause 65]
+```
+
+Code de sortie 0 si aucun écart refusé, 1 sinon, 2 pour une erreur d'usage ou réseau. `--trace` liste étape, statuts et codes
+d'erreur ; `--server`, `--email`, `--password` et `--owner` ont pour défaut le Vaultwarden jetable de la VM Agents.
+Prérequis sur la VM Agents : Vaultwarden jetable derrière Caddy `tls internal` (`vaultagent-test-tls`, alias
+`vaultagent-test-vw.test`), serveurs `vaultagent-rust-test` (8390) et `vaultagent-node-test` (8391) avec `VAULTAGENT_ORIGIN=https://localhost:<port>`,
+la racine Caddy montée en `SSL_CERT_FILE` (Rust, rustls) et `NODE_EXTRA_CA_CERTS` (Node ; le moteur Node filtre `NODE_*`, un
+`engine.mjs` corrigé d'une ligne est monté en lecture seule). **Vaultwarden limite les connexions** (rafale de 10, puis une par minute,
+HTTP 429) : un passage consomme 6 connexions, attendre quelques minutes entre deux passages, et recréer les deux serveurs
+(volumes neufs) avant chaque passage (`~/vaultagent-test/recreate.sh <étiquette>` sur la VM).
+
 ## `vaultagent-server` : front HTML sans JavaScript (tâche 2.4b)
 
 Aucune dépendance nouvelle ni variable d'environnement (`VAULTAGENT_WEB` est supprimée : la feuille de style est dans le

@@ -6,6 +6,7 @@ members = [
     "vaultagent-server",
     "vaultagent-client",
     "vaultagent-win32",
+    "vaultagent-parity",
 ]
 
 [workspace.package]

@@ -47,6 +47,7 @@ mod front_status;
 mod front_tab;
 mod front_view;
 mod guard;
+pub mod healthcheck;
 pub mod http;
 mod i18n;
 mod i18n_account;

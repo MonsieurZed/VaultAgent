@@ -6,6 +6,9 @@ distribués sous la licence MIT du dépôt. Cette licence ne remplace aucune lic
 L'adaptation `fork/agent.ts` et le moteur CLI compilé s'appuient sur Bitwarden CLI, sous GPLv3 :
 voir `LICENSE-GPL.txt` et les mentions conservées dans les sources et dépendances.
 
+Le serveur Rust (`rust/`) lie le SDK Bitwarden (`sdk-internal`, https://github.com/bitwarden/sdk-internal, révision
+`6238472451e4fa7b5c592b4b24a84e950a258957`) sous GPL-3.0 : voir `LICENSE-GPL.txt`.
+
 - Sources : https://github.com/bitwarden/clients
 - Révision : `91214c3b978edb5496a32a946451960fe7d44531`
 - Tag : `cli-v2026.10.1`

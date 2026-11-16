@@ -35,6 +35,7 @@ pub mod protect;
 pub mod request;
 mod request_actions;
 pub mod revision;
+pub mod rsa_keys;
 pub mod session_control;
 pub mod share_checks;
 pub mod share_flow;
@@ -77,6 +78,8 @@ pub use projection::{
 pub use protect::{Protected, protect, unprotect};
 pub use request::{WriteAction, WriteRequest};
 pub use revision::RevisionDate;
+pub use rsa::RsaPrivateKey;
+pub use rsa_keys::{check_signature, generate_rsa, public_key_spki, sign_decision, sign_pss};
 pub use session_control::SessionControl;
 pub use share_checks::SharePreview;
 pub use share_flow::ShareStart;
