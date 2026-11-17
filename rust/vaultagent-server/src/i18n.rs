@@ -3,10 +3,16 @@
 
 use crate::front_escape::escape;
 use crate::front_lang::Lang;
-use crate::{i18n_account, i18n_clients, i18n_layout};
+use crate::{i18n_account, i18n_devices, i18n_errors, i18n_help, i18n_layout};
 
 /// Tables de traduction, chacune dans son fichier.
-const TABLES: [&[(&str, &str, &str)]; 3] = [i18n_layout::ENTRIES, i18n_account::ENTRIES, i18n_clients::ENTRIES];
+const TABLES: [&[(&str, &str, &str)]; 5] = [
+    i18n_layout::ENTRIES,
+    i18n_account::ENTRIES,
+    i18n_devices::ENTRIES,
+    i18n_help::ENTRIES,
+    i18n_errors::ENTRIES,
+];
 
 /// Traduit un texte français.
 ///
@@ -45,7 +51,7 @@ mod tests {
         assert_eq!(translate(Lang::Fr, "Verrouiller"), "Verrouiller");
         assert_eq!(translate(Lang::En, "Verrouiller"), "Lock");
         assert_eq!(translate(Lang::Es, "Verrouiller"), "Bloquear");
-        assert_eq!(translate(Lang::En, "Compte"), "Account");
+        assert_eq!(translate(Lang::En, "Appareils"), "Devices");
     }
 
     #[test]
@@ -60,6 +66,6 @@ mod tests {
             assert!(!french.is_empty() && !english.is_empty() && !spanish.is_empty());
             assert!(seen.insert(*french), "doublon : {french}");
         }
-        assert_eq!(seen.len(), 71);
+        assert_eq!(seen.len(), 86);
     }
 }

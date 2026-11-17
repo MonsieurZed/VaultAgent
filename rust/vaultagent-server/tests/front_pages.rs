@@ -1,4 +1,5 @@
-//! Rendu de `GET /` : onglets, trois langues, échappement, champs secrets vides, absence de script, rafraîchissement.
+//! Rendu de `GET /` et des pages secondaires : trois langues, échappement, champs secrets vides, absence de script,
+//! cookie de langue, anciens liens `?tab=` ignorés.
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
@@ -12,15 +13,20 @@ use vaultagent_core::SeededEntropy;
 use vaultagent_core::devices::enroll;
 use vaultagent_server::Request;
 
-const TABS: [&str; 3] = ["account", "clients", "about"];
+const VIEWS: [&str; 4] = ["", "vault", "add", "help"];
 const HOSTILE: &str = "<script>alert(1)</script>";
 
-/// Page rendue pour un onglet et une langue.
-fn page(service: &Service, tab: &str, lang: &str) -> String {
-    html(&service.send(&get(&format!("/?tab={tab}&lang={lang}"))))
+/// Page rendue pour un écran (`""` : la page principale) et une langue.
+fn page(service: &Service, view: &str, lang: &str) -> String {
+    let path = if view.is_empty() {
+        format!("/?lang={lang}")
+    } else {
+        format!("/?view={view}&lang={lang}")
+    };
+    html(&service.send(&get(&path)))
 }
 
-/// Ouvre une demande de déverrouillage et une demande d'association.
+/// Ouvre une demande de déverrouillage et une demande d'ajout d'appareil.
 fn pending(service: &Service, name: &str) {
     service.call("request-unlock", &json!({}));
     let request = Request::new("POST", "/api/pair", "127.0.0.1")
@@ -30,49 +36,50 @@ fn pending(service: &Service, name: &str) {
 }
 
 #[test]
-fn each_tab_shows_its_key_texts_in_the_three_languages() {
+fn each_page_shows_its_key_texts_in_the_three_languages() {
     let service = Service::new(VaultState::Locked, Client::Paired);
     let expected = [
+        ["Appareils", "Devices", "Dispositivos"],
         ["Connecter votre coffre", "Connect your vault", "Conectar tu bóveda"],
-        [
-            "Vos clients Windows et Linux",
-            "Your Windows and Linux clients",
-            "Tus clientes Windows y Linux",
-        ],
+        ["Ajouter un appareil", "Add a device", "Añadir un dispositivo"],
         [
             "Ce que protège le remplissage",
             "What blind filling protects",
             "Qué protege el rellenado",
         ],
     ];
-    for (tab, texts) in TABS.iter().zip(expected) {
+    for (view, texts) in VIEWS.iter().zip(expected) {
         for (lang, text) in ["fr", "en", "es"].iter().zip(texts) {
-            let body = page(&service, tab, lang);
-            assert!(body.contains(text), "{tab}/{lang}");
+            let body = page(&service, view, lang);
+            assert!(body.contains(text), "{view}/{lang}");
             assert!(body.contains(&format!("<html lang=\"{lang}\">")));
         }
     }
-    let status = [
-        ("fr", "Coffre verrouillé"),
-        ("en", "Vault locked"),
-        ("es", "Bóveda bloqueada"),
-    ];
+    let status = [("fr", "Verrouillé"), ("en", "Locked"), ("es", "Bloqueada")];
     for (lang, text) in status {
-        assert!(page(&service, "account", lang).contains(text));
+        assert!(page(&service, "", lang).contains(text));
     }
 }
 
 #[test]
-fn only_the_active_tab_is_rendered() {
+fn only_the_requested_page_is_rendered_and_an_old_tab_link_is_ignored() {
     let service = Service::new(VaultState::Locked, Client::Paired);
-    let account = page(&service, "account", "fr");
-    assert!(account.contains("Connecter votre coffre") && !account.contains("Vos clients Windows et Linux"));
-    assert!(!account.contains("Ce que protège le remplissage"));
-    let clients = page(&service, "clients", "fr");
-    assert!(clients.contains("/downloads/linux-client.tar.gz") && !clients.contains("Connecter votre coffre"));
-    assert!(clients.contains("Client factice"));
-    let unknown = html(&service.send(&get("/?tab=nope&lang=xx")));
-    assert!(unknown.contains("Connecter votre coffre") && unknown.contains("<html lang=\"fr\">"));
+    let main = page(&service, "", "fr");
+    assert!(main.contains("Client factice") && !main.contains("Connecter votre coffre"));
+    let vault = page(&service, "vault", "fr");
+    assert!(vault.contains("Connecter votre coffre") && !vault.contains("Client factice"));
+    assert!(!vault.contains("Ce que protège le remplissage"));
+    let add = page(&service, "add", "fr");
+    assert!(add.contains("/downloads/linux-client.tar.gz") && !add.contains("Connecter votre coffre"));
+    for old in ["account", "clients", "about", "nope"] {
+        let legacy = html(&service.send(&get(&format!("/?tab={old}&lang=xx"))));
+        assert!(
+            legacy.contains("Client factice") && legacy.contains("<html lang=\"fr\">"),
+            "{old}"
+        );
+    }
+    let unknown_view = html(&service.send(&get("/?view=settings")));
+    assert!(unknown_view.contains("Client factice"));
 }
 
 #[test]
@@ -90,34 +97,35 @@ fn the_language_link_sets_a_strict_cookie_and_the_cookie_is_reused() {
         assert!(cookie.contains(part), "{part}");
     }
     let later = html(&service.send(&get_with_cookie("/", "vaultagent-language=es")));
-    assert!(later.contains("Conectar tu bóveda"));
+    assert!(later.contains("Dispositivos"));
     let ignored = service.send(&get("/?lang=zz"));
-    assert!(ignored.header("set-cookie").is_none() && html(&ignored).contains("Connecter votre coffre"));
+    assert!(ignored.header("set-cookie").is_none() && html(&ignored).contains("Appareils"));
+    let kept = page(&service, "help", "en");
+    assert!(kept.contains("href=\"/?view=help&amp;lang=es\""));
 }
 
 #[test]
 fn hostile_names_are_escaped() {
     let service = Service::new(VaultState::Locked, Client::None);
     let vault = service.vaults.get(None).unwrap();
-    service.vaults.save_name(Some("default"), Some(HOSTILE)).unwrap();
     let profile = vault.store.account().unwrap().profile;
     let (records, _) = enroll(HOSTILE, &profile, None, WALL_BASE, &[], &mut SeededEntropy::new(3)).unwrap();
     vault.store.update_devices(|_| Ok(records)).unwrap();
     pending(&service, HOSTILE);
-    let body = page(&service, "clients", "en");
+    let body = page(&service, "", "en");
     assert!(!body.contains("<script"), "{body}");
-    assert!(body.contains("&lt;script&gt;alert(1)&lt;/script&gt;"));
-    assert!(body.contains("Allow on &lt;script&gt;"));
+    assert!(body.matches("&lt;script&gt;alert(1)&lt;/script&gt;").count() >= 2);
 }
 
 #[test]
 fn password_and_code_fields_are_always_rendered_empty() {
     let service = Service::new(VaultState::Unlocked, Client::None);
-    let body = page(&service, "account", "fr");
+    let body = page(&service, "vault", "fr");
     assert!(body.contains("name=\"password\" type=\"password\" autocomplete=\"new-password\" value=\"\""));
     assert!(body.contains("name=\"code\" autocomplete=\"one-time-code\" value=\"\""));
     assert!(body.contains(&format!("value=\"{SERVER}\"")) && body.contains(&format!("value=\"{EMAIL}\"")));
     assert!(!body.contains(FICTITIOUS));
+    assert!(body.contains("Changer de compte retire tous les appareils."));
 }
 
 #[test]
@@ -128,9 +136,9 @@ fn no_page_carries_a_script_or_an_event_handler() {
     ] {
         let service = Service::new(state, client);
         pending(&service, "Poste");
-        for tab in TABS {
+        for view in VIEWS {
             for lang in ["fr", "en", "es"] {
-                let body = page(&service, tab, lang).to_lowercase();
+                let body = page(&service, view, lang).to_lowercase();
                 for forbidden in [
                     "<script",
                     "javascript:",
@@ -139,7 +147,7 @@ fn no_page_carries_a_script_or_an_event_handler() {
                     " onsubmit=",
                     " onload=",
                 ] {
-                    assert!(!body.contains(forbidden), "{tab}/{lang}/{forbidden}");
+                    assert!(!body.contains(forbidden), "{view}/{lang}/{forbidden}");
                 }
             }
         }
@@ -147,38 +155,22 @@ fn no_page_carries_a_script_or_an_event_handler() {
 }
 
 #[test]
-fn the_refresh_meta_follows_the_tab_and_the_pending_requests() {
-    let quiet = Service::new(VaultState::Locked, Client::None);
-    let meta = "http-equiv=\"refresh\" content=\"5\"";
-    assert!(page(&quiet, "clients", "fr").contains(meta));
-    assert!(!page(&quiet, "account", "fr").contains(meta));
-    assert!(!page(&quiet, "about", "fr").contains(meta));
-    let after_action = html(&quiet.send(&get("/?tab=clients&msg=saved")));
-    assert!(!after_action.contains(meta));
-    let busy = Service::new(VaultState::Locked, Client::Paired);
-    pending(&busy, "Poste");
-    assert!(page(&busy, "about", "fr").contains(meta));
-    assert!(html(&busy.send(&get("/?tab=clients&msg=saved"))).contains(meta));
-    assert!(!page(&busy, "account", "fr").contains(meta));
-    assert!(page(&busy, "account", "fr").contains("Demandes de déverrouillage"));
-    assert!(page(&busy, "clients", "fr").contains("Demandes d’association"));
-}
-
-#[test]
-fn times_are_server_rendered_in_utc_and_messages_are_translated_codes() {
+fn times_are_server_rendered_in_paris_time_and_messages_are_translated_codes() {
     let service = Service::new(VaultState::Unlocked, Client::Paired);
-    let body = page(&service, "clients", "fr");
-    assert!(body.contains("08:15 UTC"));
-    assert!(body.contains("2027-01-15"), "date des appareils");
-    let refused = html(&service.send(&get("/?tab=account&msg=login-refused&lang=en")));
+    let body = page(&service, "", "fr");
+    assert!(body.contains("Déverrouillé jusqu’à 09:15"));
+    assert!(body.contains("ajouté le 15/01"), "date des appareils");
+    let refused = html(&service.send(&get("/?view=vault&msg=login-refused&lang=en")));
     assert!(refused.contains("Sign-in refused."));
     let injected = html(&service.send(&get("/?msg=%3Cscript%3E")));
     assert!(!injected.contains("<script") && !injected.contains("&lt;script"));
 }
 
 #[test]
-fn an_unconfigured_vault_asks_for_setup_and_disables_the_actions() {
+fn an_unconfigured_vault_shows_the_vault_form_on_the_root_page() {
     let service = Service::new(VaultState::Unconfigured, Client::None);
-    let body = page(&service, "account", "en");
+    let body = page(&service, "", "en");
     assert!(body.contains("Setup required") && body.contains("disabled"));
+    assert!(body.contains("Connect your vault") && body.contains("action=\"/admin/configure\""));
+    assert!(!body.contains("Devices") && !body.contains("class=\"back\""));
 }

@@ -4,16 +4,20 @@ use crate::admin_state::State;
 use crate::front_escape::escape;
 use crate::front_lang::Lang;
 use crate::front_notice::Notice;
-use crate::front_tab::Tab;
+use crate::front_screen::Screen;
 
-/// Contexte d'un rendu : langue, onglet actif, message éventuel et état du coffre.
+/// Contexte d'un rendu : langue, écran, message, page, confirmation et état du coffre.
 pub struct View<'a> {
     /// Langue d'affichage.
     pub lang: Lang,
-    /// Onglet actif.
-    pub tab: Tab,
+    /// Écran affiché.
+    pub screen: Screen,
     /// Message de la dernière action.
     pub notice: Option<Notice>,
+    /// Paramètre `page` brut de la liste des appareils.
+    pub page: Option<String>,
+    /// Appareil dont le retrait attend sa confirmation (identifiant d'un appareil connu seulement).
+    pub confirm: Option<String>,
     /// État administrateur du coffre.
     pub state: &'a State,
 }

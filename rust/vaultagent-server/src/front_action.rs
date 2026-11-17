@@ -44,14 +44,14 @@ fn pairing_reply(context: &Context, request: &Request, reply: &Response, prepare
             let lang = Lang::choose(None, request.header("cookie"));
             pairing_page(lang, code, context.clock.wall_ms() + seconds * 1000)
         }
-        _ => redirect(prepared.tab, Notice::Refused),
+        _ => redirect(prepared.screen, Notice::Refused),
     }
 }
 
 /// Traite un formulaire d'administration.
 ///
 /// Paramètres : le contexte, la requête (proxy et propriétaire déjà contrôlés), le chemin `/admin/<action>`.
-/// Retour : la redirection `303` vers `/?tab=…&msg=<code>`, ou la page du code pour `pairing`.
+/// Retour : la redirection `303` vers `/?msg=<code>` ou `/?view=…&msg=<code>`, ou la page du code pour `pairing`.
 ///
 /// # Errors
 ///
@@ -66,7 +66,7 @@ pub fn handle(context: &Context, request: &Request, path: &str) -> Result<Respon
     let prepared = prepare(name, &form).ok_or(ErrorCode::RouteRefused)?;
     match act(context, prepared.action, &prepared.body) {
         Ok(reply) if prepared.action == "pairing" => Ok(pairing_reply(context, request, &reply, &prepared)),
-        Ok(_) => Ok(redirect(prepared.tab, Notice::Saved)),
-        Err(error) => Ok(redirect(prepared.tab, Notice::from_error(error.code_text()))),
+        Ok(_) => Ok(redirect(prepared.screen, Notice::Saved)),
+        Err(error) => Ok(redirect(prepared.screen, Notice::from_error(error.code_text()))),
     }
 }

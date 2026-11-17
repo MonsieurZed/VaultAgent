@@ -250,7 +250,19 @@ Aucune dépendance nouvelle ni variable d'environnement (`VAULTAGENT_WEB` est su
 binaire par `include_str!`, `assets/style.css`). Le front de `linux/web/` n'est plus servi : `/app.js` et `/index.html` rendent `404`.
 
 - **`GET /`** : page complète rendue depuis l'état du coffre `default` (même donnée que `GET /api/admin/state`), pour le
-  propriétaire Authentik derrière le proxy de confiance. Onglets : liens `?tab=account|clients|about`, seul l'actif est rendu.
+  propriétaire Authentik derrière le proxy de confiance. Tâche 7.3 : une page principale sans onglets (barre d'état avec pastille
+  « Verrouillé » / « Déverrouillé jusqu'à HH:MM » / « À configurer », « Déverrouiller » avec champ 2FA ou « Verrouiller », langue,
+  « Aide » ; ligne du coffre « <e-mail> sur <hôte> · verrouillage après N min · Modifier » ; section « À valider » seulement si une
+  demande de déverrouillage ou d'ajout attend ; « Appareils » avec rôle « validateur · UAC | Hello | carte » ou « agent », « Sans
+  demander » pour un agent seulement, date « ajouté le JJ/MM », « Retirer »). Tâche 7.4 : grille sur `100vh` sans défilement
+  à 1366 × 768 (`style.css`, 5 Ko, thème sombre par `prefers-color-scheme`) ; appareils paginés par `?page=N` (8 par page, moins quand
+  des demandes attendent, minimum 3 ; page invalide ou hors plage bornée, jamais d'erreur ; liens « ‹ Précédent » / « N / M » / « Suivant › »
+  seulement s'il y a plusieurs pages ; une redirection après action revient à la page 1) ; « Retirer » est un lien `?confirm=<id>` (GET,
+  aucune action) qui ouvre sur la ligne « Il ne pourra plus rien remplir. », « Confirmer le retrait » (POST `revoke`, contrôle d'origine)
+  et « Annuler » (un `confirm` inconnu est ignoré) ; rafraîchissement de 10 s seulement sur une page principale sans demande, sans
+  message et sans confirmation ouverte. Pages secondaires `?view=vault` (formulaire du coffre, aussi rendu par `/` tant
+  que rien n'est configuré), `?view=add` (nom, code d'ajout, téléchargements avec SHA256) et `?view=help`, chacune avec un lien
+  « Retour ». Un ancien `?tab=` est ignoré ; un `?view=` inconnu rend la page principale.
   Messages : `?msg=saved|refused|login-refused|duplicate-account|expired`, des codes traduits au rendu.
 - **Langue** : `?lang=fr|en|es` pose le cookie `vaultagent-language` (`Path=/; SameSite=Strict; HttpOnly; Secure`) ; français par défaut.
 - **Sécurité** : aucun `<script>` ni attribut `on*` ; `Content-Security-Policy: default-src 'none'; style-src 'self'; img-src 'self';
@@ -259,21 +271,27 @@ binaire par `include_str!`, `assets/style.css`). Le front de `linux/web/` n'est 
 - **Actions** : formulaires `POST /admin/<configure|unlock|lock|pairing|pair-decide|decide-unlock|auto-unlock|revoke>` en
   `application/x-www-form-urlencoded`. Le propriétaire est contrôlé par `route`, l'en-tête `origin` doit valoir `VAULTAGENT_ORIGIN`
   (sinon `403 origin-refused`), puis `admin::act` (la même fonction que la route JSON) est appelée et la réponse est un `303` vers
-  `/?tab=…&msg=<code>`. `pairing` répond directement une page `200` `no-store` (code dans un `<details>`) : le code n'entre dans aucune URL.
-- **Rafraîchissement** : `<meta http-equiv="refresh" content="5">` sur « Clients » tant qu'aucun message n'est affiché, et sur tout onglet sauf
-  « Compte » quand des demandes attendent ; jamais sur « Compte » (une saisie serait perdue). Lien « Actualiser » partout.
-- **Dates** : rendues côté serveur en UTC (`HH:MM UTC`, avec la date pour les appareils) ; la bibliothèque standard n'a pas de fuseau.
+  `/?msg=<code>` (page principale) ou `/?view=vault|add|help&msg=<code>` (`configure` vers `vault`, `pairing` en échec vers `add`, `unlock`, `lock` et `decide-unlock` vers le champ caché `view` du formulaire s'il existe) ; les erreurs de `front_error` vont vers `/?msg=<code>`. `pairing` répond directement une page `200` `no-store` (code dans un `<details>`) : le code n'entre dans aucune URL.
+- **Rafraîchissement** : `<meta http-equiv="refresh" content="10">` sur la page principale seulement, quand aucune demande n'attend et
+  qu'aucun message n'est affiché ; jamais sur les pages secondaires ni sur le formulaire du coffre (une saisie serait perdue). Lien « Actualiser » dans la barre.
+- **Rôle des appareils** : `device_kind` lit l'enregistrement (clé de validateur, clé d'élévation, justificatif Hello) ; `State.device_kinds` ne
+  sort pas dans le JSON de `GET /api/admin/state` (`#[serde(skip)]`).
+- **Vocabulaire** : appareil, ajout d'appareil, validateur, Déverrouiller, Sans demander, Retirer (table de `docs/rust/interface-web.md`).
+- **Dates** : rendues côté serveur en heure de Paris, sans mention de fuseau (`HH:MM`, `JJ/MM` pour les appareils) ; `front_paris` calcule
+  UTC+1 ou UTC+2 (dernier dimanche de mars 01:00 UTC au dernier dimanche d'octobre 01:00 UTC) sans base de fuseaux.
 
 | Module (2.4b) | Rôle |
 |---|---|
-| `front_page`, `front_view` | `GET /` : choix de langue, d'onglet et de message, puis assemblage de la page (rafraîchissement, liste de langues, onglets, pied de page). |
-| `front_status`, `front_account`, `front_clients`, `front_devices`, `front_about` | Organismes de la page : statut et demandes de déverrouillage, formulaire du compte, onglet Clients (guide, demandes d'association, création du code), appareils, « Fonctionnement ». |
+| `front_page`, `front_view`, `front_screen` | `GET /` : choix de langue, d'écran (`Screen` : principale, `vault`, `add`, `help`) et de message, puis assemblage de la page (rafraîchissement). |
+| `front_bar`, `front_vault_line`, `front_pending`, `front_devices`, `device_kind` | Organismes de la page principale : barre d'état (et barre « Retour » des pages secondaires), ligne du coffre et message, « À valider », « Appareils » et rôle des appareils. |
+| `front_account`, `front_add`, `front_help` | Pages secondaires : formulaire du coffre, ajout d'un appareil, aide. |
 | `front_html`, `front_escape` | `View` (contexte de rendu), champs cachés, balise de formulaire ; `escape` (cinq caractères). |
 | `front_action`, `front_body`, `form` | `POST /admin/*` : contrôles, `Form::parse` (analyseur `x-www-form-urlencoded`, std seulement), corps JSON de l'action, redirection. |
-| `front_pairing`, `front_response`, `front_notice`, `front_tab`, `front_lang`, `front_dates` | Page du code ; réponses (CSP, redirection 303, `style.css`) ; messages ; onglets ; langue et cookie ; dates UTC. |
-| `i18n`, `i18n_layout`, `i18n_account`, `i18n_clients` | Tables fr/en/es indexées par le texte français (71 entrées : les 64 de l'ancien `app.js` et 7 nouvelles) ; un texte absent reste en français. |
+| `front_error`, `i18n_errors` | Tâche 7.2 : erreur d'un formulaire `POST /admin/*` du navigateur (type de formulaire ou `Sec-Fetch-Mode: navigate`) = redirection `303` avec un code de message, sans action (`origin-refused`, `request-size`, `request-refused`, `route-refused` compris ; `proxy-required`, `owner-required`, `unauthorized` restent en JSON) ; erreur d'une page `GET` du navigateur (`Sec-Fetch-Mode: navigate` ou `Accept: text/html`) = page HTML d'une phrase avec lien « Retour » et en-têtes de sécurité. Les routes `/api/admin/*` et les requêtes sans ces en-têtes gardent le JSON du protocole. `Notice::from_error` est la table code d'erreur → message (code inconnu : « Action refusée par le serveur. »). |
+| `front_pairing`, `front_response`, `front_notice`, `front_lang`, `front_dates`, `front_paris`, `front_paging` | Page du code ; réponses (CSP, redirection 303, `style.css`) ; messages ; langue et cookie ; dates en heure de Paris (`front_paris` : décalage, calendrier) ; pagination des appareils. |
+| `i18n`, `i18n_layout`, `i18n_account`, `i18n_devices`, `i18n_help`, `i18n_errors` | Tables fr/en/es indexées par le texte français (80 entrées après la tâche 7.3) ; un texte absent reste en français. |
 
-Tests 2.4b : `front_pages` (onglets en trois langues, échappement, champs vides, aucun script, rafraîchissement, cookie), `front_actions`
+Tests 2.4b, 7.3 et 7.4 (`front_paging` : pagination, confirmation du retrait, heure de Paris, feuille de style) : `front_pages` (pages en trois langues, ancien `?tab=` ignoré, échappement, champs vides, aucun script, cookie), `front_layout` (barre, ligne du coffre, « À valider », rôles et modes, pages secondaires et « Retour », rafraîchissement, vocabulaire), `front_actions`
 (origine, propriétaire, corps, chaque action, page du code), tests unitaires de chaque module, `transport` (`GET /` sur socket réel).
 Le cas doré `front-index` décrit la nouvelle page (CSP sans script) ; les 48 autres sont inchangés.
 

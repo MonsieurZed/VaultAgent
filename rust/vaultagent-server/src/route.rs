@@ -10,6 +10,7 @@ use vaultagent_core::ErrorCode;
 use crate::agent::handle;
 use crate::context::Context;
 use crate::error::Result;
+use crate::front_error;
 use crate::http::{Request, Response};
 use crate::owner;
 use crate::pair_route;
@@ -27,10 +28,11 @@ struct Alive {
 /// Répond à une requête HTTP.
 ///
 /// Paramètres : la requête reçue, le contexte du service.
-/// Retour : la réponse, toujours en JSON, y compris pour les erreurs.
+/// Retour : la réponse ; les erreurs sont en JSON, sauf pour un formulaire ou une page de navigateur du front
+/// (redirection avec code de message, page d'erreur HTML : [`crate::front_error`]).
 #[must_use]
 pub fn route(request: &Request, context: &Context) -> Response {
-    dispatch(request, context).unwrap_or_else(|error| Response::error(&error))
+    dispatch(request, context).unwrap_or_else(|error| front_error::reply(request, &error))
 }
 
 /// Applique les contrôles communs puis aiguille vers la route.

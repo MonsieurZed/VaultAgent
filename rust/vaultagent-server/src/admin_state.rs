@@ -1,6 +1,8 @@
 //! État administrateur d'un coffre : construit une fois, rendu en JSON par `GET /api/admin/state` et en HTML par le
 //! front.
 
+use std::collections::HashMap;
+
 use serde::Serialize;
 use vaultagent_core::device_list::list;
 use vaultagent_core::unlock_replies::ListedRequest;
@@ -8,6 +10,7 @@ use vaultagent_core::{Listed, PublicDevice};
 
 use crate::agent_unlock::with_env;
 use crate::context::Context;
+use crate::device_kind::{DeviceKind, kinds};
 use crate::error::Result;
 use crate::http::{Request, Response};
 use crate::query::query_param;
@@ -36,6 +39,8 @@ pub struct State {
     pub devices: Vec<PublicDevice>,
     pub unlock_requests: Vec<ListedRequest>,
     pub pair_requests: Vec<Listed>,
+    #[serde(skip)]
+    pub device_kinds: HashMap<String, DeviceKind>,
 }
 
 /// Construit l'état d'un coffre.
@@ -52,6 +57,9 @@ pub fn snapshot(context: &Context, vault: &VaultContext) -> Result<State> {
     let devices = account
         .as_ref()
         .map_or_default(|value| list(&vault.store.devices(), &value.profile));
+    let device_kinds = account
+        .as_ref()
+        .map_or_default(|value| kinds(&vault.store.devices(), &value.profile));
     let pair_requests = locked(&context.pair_requests).list(context.clock.wall_ms());
     Ok(State {
         vault_id: vault.id.clone(),
@@ -65,6 +73,7 @@ pub fn snapshot(context: &Context, vault: &VaultContext) -> Result<State> {
         devices,
         unlock_requests,
         pair_requests,
+        device_kinds,
     })
 }
 

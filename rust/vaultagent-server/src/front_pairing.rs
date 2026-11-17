@@ -1,4 +1,4 @@
-//! Page du code d'association : servie directement par `POST /admin/pairing`, jamais par redirection, pour que le
+//! Page du code d'ajout : servie directement par `POST /admin/pairing`, jamais par redirection, pour que le
 //! code n'entre dans aucune URL.
 
 use crate::front_dates::time_of_ms;
@@ -17,20 +17,20 @@ pub fn pairing_page(lang: Lang, code: &str, expires_ms: u64) -> Response {
     let body = format!(
         "<!doctype html>\n<html lang=\"{}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" \
 content=\"width=device-width,initial-scale=1\"><title>VaultAgent</title><link rel=\"stylesheet\" href=\"/style.css\"></head>\n\
-<body><header><a class=\"brand\" href=\"/?tab=clients\"><span class=\"shield\">◆</span> VaultAgent</a></header>\n\
+<body><header class=\"bar\"><a class=\"brand\" href=\"/\"><span class=\"shield\">◆</span> VaultAgent</a></header>\n\
 <main><section class=\"tab pairing\"><h2>{}</h2><p>{}</p><details><summary>{}</summary><code class=\"pair-code\">{}</code>\
-</details><p class=\"note\">{} {}</p><p><a href=\"/?tab=clients\">{}</a></p></section></main></body></html>\n",
+</details><p class=\"note\">{} {}</p><p><a href=\"/\">{}</a></p></section></main></body></html>\n",
         lang.code(),
-        text(lang, "Code d’association"),
+        text(lang, "Code d’ajout"),
         text(
             lang,
-            "Saisissez ce code dans le client. Usage unique, valable cinq minutes. Ne le collez pas dans un chat."
+            "Saisissez ce code dans le programme de l’appareil. Usage unique, valable cinq minutes. Ne le collez pas dans un chat."
         ),
         text(lang, "Afficher le code"),
         escape(code),
         text(lang, "Valable jusqu’à"),
         escape(&time_of_ms(expires_ms)),
-        text(lang, "Retour aux clients"),
+        text(lang, "Retour"),
     );
     page(body, None)
 }
@@ -44,7 +44,7 @@ mod tests {
         let response = pairing_page(Lang::En, "default.abc", 1_800_000_000_000);
         let html = String::from_utf8(response.body.clone()).unwrap();
         assert!(html.contains("<details><summary>Show code</summary><code class=\"pair-code\">default.abc</code>"));
-        assert!(html.contains("08:00 UTC") && !html.contains("<script"));
+        assert!(html.contains("09:00") && !html.contains("<script"));
         assert_eq!(response.header("cache-control"), Some("no-store"));
     }
 }

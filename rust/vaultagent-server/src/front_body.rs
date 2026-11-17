@@ -3,16 +3,16 @@
 use serde_json::{Map, Number, Value};
 
 use crate::form::Form;
-use crate::front_tab::Tab;
+use crate::front_screen::Screen;
 
-/// Corps JSON et onglet de retour d'une action de formulaire.
+/// Corps JSON et écran de retour d'une action de formulaire.
 pub struct Prepared {
     /// Nom de l'action d'administration.
     pub action: &'static str,
     /// Corps JSON passé à la même fonction que la route JSON.
     pub body: Value,
-    /// Onglet de la redirection.
-    pub tab: Tab,
+    /// Écran de la redirection.
+    pub screen: Screen,
 }
 
 /// Objet JSON à partir de paires nom-valeur.
@@ -30,9 +30,9 @@ fn string(text: &str) -> Value {
     Value::String(text.to_owned())
 }
 
-/// Onglet d'un champ caché `tab`, « Compte » à défaut.
-fn tab_field(form: &Form) -> Tab {
-    Tab::parse(form.text("tab")).unwrap_or(Tab::Account)
+/// Écran d'un champ caché `view`, la page principale à défaut.
+fn view_field(form: &Form) -> Screen {
+    Screen::parse(form.text("view")).unwrap_or(Screen::Main)
 }
 
 /// Délai de `configure` : désactivé si la case manque, sinon un nombre (un texte non numérique reste texte, la route le
@@ -55,7 +55,7 @@ fn timeout(form: &Form) -> Value {
 #[must_use]
 pub fn prepare(name: &str, form: &Form) -> Option<Prepared> {
     let approve = form.get("approve") == Some("true");
-    let (action, body, tab) = match name {
+    let (action, body, screen) = match name {
         "configure" => (
             "configure",
             object(vec![
@@ -65,18 +65,18 @@ pub fn prepare(name: &str, form: &Form) -> Option<Prepared> {
                 ("code", string(form.text("code"))),
                 ("timeoutMinutes", timeout(form)),
             ]),
-            Tab::Account,
+            Screen::Vault,
         ),
         "unlock" => (
             "unlock",
             object(vec![("code", string(form.text("code")))]),
-            tab_field(form),
+            view_field(form),
         ),
-        "lock" => ("lock", object(Vec::new()), tab_field(form)),
+        "lock" => ("lock", object(Vec::new()), view_field(form)),
         "pairing" => (
             "pairing",
             object(vec![("name", string(form.text("name")))]),
-            Tab::Clients,
+            Screen::Add,
         ),
         "pair-decide" => (
             "pair-decide",
@@ -84,7 +84,7 @@ pub fn prepare(name: &str, form: &Form) -> Option<Prepared> {
                 ("requestId", string(form.text("requestId"))),
                 ("approve", Value::Bool(approve)),
             ]),
-            Tab::Clients,
+            Screen::Main,
         ),
         "decide-unlock" => {
             let mut pairs = vec![
@@ -94,7 +94,7 @@ pub fn prepare(name: &str, form: &Form) -> Option<Prepared> {
             if approve {
                 pairs.push(("code", string(form.text("code"))));
             }
-            ("decide-unlock", object(pairs), tab_field(form))
+            ("decide-unlock", object(pairs), view_field(form))
         }
         "auto-unlock" => (
             "auto-unlock",
@@ -102,16 +102,16 @@ pub fn prepare(name: &str, form: &Form) -> Option<Prepared> {
                 ("deviceId", string(form.text("deviceId"))),
                 ("enabled", Value::Bool(form.get("enabled") == Some("true"))),
             ]),
-            Tab::Clients,
+            Screen::Main,
         ),
         "revoke" => (
             "revoke",
             object(vec![("deviceId", string(form.text("deviceId")))]),
-            Tab::Clients,
+            Screen::Main,
         ),
         _ => return None,
     };
-    Some(Prepared { action, body, tab })
+    Some(Prepared { action, body, screen })
 }
 
 #[cfg(test)]
@@ -132,13 +132,13 @@ mod tests {
 
     #[test]
     fn decisions_read_the_clicked_button() {
-        let form = Form::parse(b"requestId=r1&approve=true&code=123456&tab=about");
+        let form = Form::parse(b"requestId=r1&approve=true&code=123456&view=help");
         let prepared = prepare("decide-unlock", &form).unwrap();
         assert_eq!(
             (prepared.body["approve"].clone(), prepared.body["code"].clone()),
             (Value::Bool(true), "123456".into())
         );
-        assert_eq!(prepared.tab, Tab::About);
+        assert_eq!(prepared.screen, Screen::Help);
         let denied = prepare("decide-unlock", &Form::parse(b"requestId=r1&approve=false&code=1")).unwrap();
         assert!(denied.body.get("code").is_none());
     }

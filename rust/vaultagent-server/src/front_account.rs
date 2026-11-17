@@ -1,4 +1,4 @@
-//! Onglet « Compte » : formulaire de connexion au coffre ; les champs secrets sont toujours rendus vides.
+//! Page « Coffre » (`?view=vault`) : formulaire de connexion au coffre ; les champs secrets sont toujours rendus vides.
 
 use crate::front_escape::escape;
 use crate::front_html::{View, form_open};
@@ -15,7 +15,7 @@ fn field(view: &View, label: &'static str, help: &'static str, input: &str) -> S
     )
 }
 
-/// Contenu de l'onglet « Compte ».
+/// Contenu de la page « Coffre ».
 ///
 /// Paramètres : le contexte de rendu.
 /// Retour : le HTML de la section.
@@ -69,7 +69,7 @@ pub fn account(view: &View) -> String {
         "<section class=\"tab\"><div class=\"section-title\"><h2>{}</h2><p>{}</p></div>{}<div class=\"grid\">{fields}</div>\
 <fieldset><legend>{}</legend><label class=\"check\"><input name=\"automatic\" type=\"checkbox\" value=\"on\"{checked}>\
 <span>{}</span></label><label class=\"timeout\"><span>{}</span><input name=\"minutes\" type=\"number\" min=\"1\" max=\"1440\" \
-value=\"{minutes}\"></label><p>{}</p></fieldset><button type=\"submit\">{}</button><p class=\"note\">{}</p></form></section>",
+value=\"{minutes}\"></label><p>{}</p></fieldset><div class=\"submit-row\"><button type=\"submit\">{}</button><p class=\"note\">{}</p></div></form></section>",
         text(lang, "Connecter votre coffre"),
         text(
             lang,
@@ -84,9 +84,6 @@ value=\"{minutes}\"></label><p>{}</p></fieldset><button type=\"submit\">{}</butt
             "Chaque utilisation autorisée prolonge le délai. Le redémarrage du serveur verrouille toujours le coffre."
         ),
         text(lang, "Vérifier et enregistrer"),
-        text(
-            lang,
-            "Changer de compte révoque les clients associés. Windows Hello et les passkeys Windows ne sont pas fournis par ce serveur."
-        ),
+        text(lang, "Changer de compte retire tous les appareils."),
     )
 }

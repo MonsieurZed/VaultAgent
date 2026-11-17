@@ -166,7 +166,7 @@ fn full_flow_over_real_sockets() {
             .is_some_and(|policy| policy.starts_with("default-src 'none'"))
     );
     let html = String::from_utf8(front.body.clone()).unwrap();
-    assert!(html.contains("Coffre disponible pour les clients") && html.contains(SERVER) && !html.contains("<script"));
+    assert!(html.contains("Déverrouillé jusqu’à") && html.contains("vault.example.test") && !html.contains("<script"));
     live.running.shutdown();
 }
 

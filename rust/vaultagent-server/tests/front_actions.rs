@@ -57,13 +57,15 @@ fn every_action_refuses_a_missing_or_foreign_origin() {
     for action in ACTIONS {
         for origin in [None, Some("https://evil.example.test")] {
             let request = form_as(action, "name=x", origin, Some(OWNER), FORM);
+            let response = service.send(&request);
             assert_eq!(
-                error_of(&service, &request),
-                (403, "origin-refused".to_owned()),
+                (response.status, location(&response).as_str()),
+                (303, "/?msg=stale-page"),
                 "{action}"
             );
         }
     }
+    assert_eq!(state(&service)["unlocked"], true);
 }
 
 #[test]
@@ -86,12 +88,10 @@ fn the_body_type_and_the_action_name_are_checked() {
     let service = Service::new(VaultState::Unlocked, Client::None);
     let json_body = form_as("lock", "{}", Some(ORIGIN), Some(OWNER), "application/json");
     assert_eq!(error_of(&service, &json_body), (400, "request-refused".to_owned()));
-    assert_eq!(
-        error_of(&service, &form("write", "")),
-        (400, "route-refused".to_owned())
-    );
+    assert_eq!(location(&service.send(&form("write", ""))), "/?msg=unknown-action");
     let big = form("lock", &format!("x={}", "a".repeat(30_000)));
-    assert_eq!(error_of(&service, &big), (400, "request-size".to_owned()));
+    assert_eq!(location(&service.send(&big)), "/?msg=too-large");
+    assert_eq!(state(&service)["unlocked"], true);
 }
 
 #[test]
@@ -104,7 +104,7 @@ fn configure_saves_then_redirects_without_the_password() {
     let response = service.send(&form("configure", &body));
     assert_eq!(
         (response.status, location(&response).as_str()),
-        (303, "/?tab=account&msg=saved")
+        (303, "/?view=vault&msg=saved")
     );
     assert!(response.body.is_empty() && !location(&response).contains(FICTITIOUS));
     let after = state(&service);
@@ -121,7 +121,7 @@ fn configure_failures_give_their_message_codes() {
     let bad = "server=http%3A%2F%2Fvault.example.test&email=probe%40example.invalid&password=x&automatic=on&minutes=15";
     assert_eq!(
         location(&service.send(&form("configure", bad))),
-        "/?tab=account&msg=refused"
+        "/?view=vault&msg=invalid-input"
     );
     assert_eq!(state(&service)["configured"], false);
 }
@@ -130,26 +130,26 @@ fn configure_failures_give_their_message_codes() {
 fn a_refused_connection_gives_the_login_message() {
     let service = Service::new(VaultState::Locked, Client::None);
     service.factory.engine().push_error(stage_error("login", "credentials"));
-    let refused = service.send(&form("unlock", "code=&tab=account"));
-    assert_eq!(location(&refused), "/?tab=account&msg=login-refused");
+    let refused = service.send(&form("unlock", "code="));
+    assert_eq!(location(&refused), "/?msg=login-refused");
     assert_eq!(state(&service)["unlocked"], false);
 }
 
 #[test]
-fn unlock_and_lock_redirect_to_the_form_tab() {
+fn unlock_and_lock_redirect_to_the_form_page() {
     let service = Service::new(VaultState::Locked, Client::None);
     connectable(&service.factory);
-    let opened = service.send(&form("unlock", "code=&tab=about"));
+    let opened = service.send(&form("unlock", "code=&view=help"));
     assert_eq!(
         (opened.status, location(&opened).as_str()),
-        (303, "/?tab=about&msg=saved")
+        (303, "/?view=help&msg=saved")
     );
     assert_eq!(state(&service)["unlocked"], true);
-    let closed = service.send(&form("lock", "tab=clients"));
-    assert_eq!(location(&closed), "/?tab=clients&msg=saved");
+    let closed = service.send(&form("lock", "view=add"));
+    assert_eq!(location(&closed), "/?view=add&msg=saved");
     assert_eq!(state(&service)["unlocked"], false);
-    let fallback = service.send(&form("lock", "tab=%3Cscript%3E"));
-    assert_eq!(location(&fallback), "/?tab=account&msg=saved");
+    let fallback = service.send(&form("lock", "view=%3Cscript%3E"));
+    assert_eq!(location(&fallback), "/?msg=saved");
 }
 
 #[test]
@@ -169,8 +169,8 @@ fn pairing_answers_a_no_store_page_and_never_a_redirect() {
         .unwrap()
         .to_owned();
     assert!(code.starts_with("default."));
-    assert!(body.contains("<details><summary>Afficher le code</summary>") && body.contains("href=\"/?tab=clients\""));
-    assert!(body.contains("08:05 UTC") && !body.contains("<script"));
+    assert!(body.contains("<details><summary>Afficher le code</summary>") && body.contains("<a href=\"/\">Retour</a>"));
+    assert!(body.contains("09:05") && !body.contains("<script"));
     for (_, value) in &response.headers {
         assert!(!value.contains(&code));
     }
@@ -185,12 +185,12 @@ fn a_refused_pairing_redirects_with_a_code() {
     let service = Service::new(VaultState::Unconfigured, Client::None);
     assert_eq!(
         location(&service.send(&form("pairing", "name=Poste"))),
-        "/?tab=clients&msg=refused"
+        "/?view=add&msg=not-configured"
     );
     let blank = Service::new(VaultState::Locked, Client::None);
     assert_eq!(
         location(&blank.send(&form("pairing", "name="))),
-        "/?tab=clients&msg=refused"
+        "/?view=add&msg=invalid-input"
     );
 }
 
@@ -199,13 +199,13 @@ fn pair_decisions_save_or_expire() {
     let service = Service::new(VaultState::Locked, Client::None);
     let id = pair_request(&service);
     let approved = service.send(&form("pair-decide", &format!("requestId={id}&approve=true")));
-    assert_eq!(location(&approved), "/?tab=clients&msg=saved");
+    assert_eq!(location(&approved), "/?msg=saved");
     assert_eq!(state(&service)["devices"].as_array().map(Vec::len), Some(1));
     let gone = service.send(&form("pair-decide", &format!("requestId={id}&approve=true")));
-    assert_eq!(location(&gone), "/?tab=clients&msg=expired");
+    assert_eq!(location(&gone), "/?msg=expired");
     let other = pair_request(&service);
     let denied = service.send(&form("pair-decide", &format!("requestId={other}&approve=false")));
-    assert_eq!(location(&denied), "/?tab=clients&msg=saved");
+    assert_eq!(location(&denied), "/?msg=saved");
     assert_eq!(state(&service)["pairRequests"].as_array().map(Vec::len), Some(0));
 }
 
@@ -217,12 +217,12 @@ fn unlock_decisions_use_the_clicked_button() {
     connectable(&service.factory);
     let approved = service.send(&form(
         "decide-unlock",
-        &format!("requestId={id}&approve=true&code=&tab=about"),
+        &format!("requestId={id}&approve=true&code=&view=help"),
     ));
-    assert_eq!(location(&approved), "/?tab=about&msg=saved");
+    assert_eq!(location(&approved), "/?view=help&msg=saved");
     assert_eq!(state(&service)["unlocked"], true);
-    let gone = service.send(&form("decide-unlock", "requestId=inconnue&approve=true&tab=account"));
-    assert_eq!(location(&gone), "/?tab=account&msg=expired");
+    let gone = service.send(&form("decide-unlock", "requestId=inconnue&approve=true"));
+    assert_eq!(location(&gone), "/?msg=expired");
 }
 
 #[test]
@@ -233,14 +233,14 @@ fn auto_unlock_and_revoke_change_the_device_list() {
         "auto-unlock",
         &format!("deviceId={device}&enabled=false&enabled=true"),
     ));
-    assert_eq!(location(&enabled), "/?tab=clients&msg=saved");
+    assert_eq!(location(&enabled), "/?msg=saved");
     assert_eq!(state(&service)["devices"][0]["autoUnlock"], true);
     let disabled = service.send(&form("auto-unlock", &format!("deviceId={device}&enabled=false")));
-    assert_eq!(location(&disabled), "/?tab=clients&msg=saved");
+    assert_eq!(location(&disabled), "/?msg=saved");
     assert_eq!(state(&service)["devices"][0]["autoUnlock"], false);
     let unknown = service.send(&form("auto-unlock", "deviceId=absent&enabled=true"));
-    assert_eq!(location(&unknown), "/?tab=clients&msg=refused");
+    assert_eq!(location(&unknown), "/?msg=invalid-input");
     let revoked = service.send(&form("revoke", &format!("deviceId={device}")));
-    assert_eq!(location(&revoked), "/?tab=clients&msg=saved");
+    assert_eq!(location(&revoked), "/?msg=saved");
     assert_eq!(state(&service)["devices"].as_array().map(Vec::len), Some(0));
 }

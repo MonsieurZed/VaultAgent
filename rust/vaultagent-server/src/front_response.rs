@@ -2,7 +2,7 @@
 
 use crate::front_lang::Lang;
 use crate::front_notice::Notice;
-use crate::front_tab::Tab;
+use crate::front_screen::Screen;
 use crate::http::Response;
 
 /// Politique de sécurité du contenu : aucun script, formulaires vers l'origine seulement.
@@ -56,16 +56,16 @@ pub fn style() -> Response {
     }
 }
 
-/// Redirection `303` vers la page, avec l'onglet et le code du message.
+/// Redirection `303` vers la page, vers l'écran, avec le code du message.
 ///
-/// Paramètres : l'onglet, le message.
+/// Paramètres : l'écran, le message.
 /// Retour : la réponse, sans corps.
 #[must_use]
-pub fn redirect(tab: Tab, notice: Notice) -> Response {
+pub fn redirect(screen: Screen, notice: Notice) -> Response {
     Response {
         status: 303,
         headers: vec![
-            ("location", format!("/?tab={}&msg={}", tab.code(), notice.code())),
+            ("location", screen.href(&[("msg", notice.code())])),
             ("cache-control", "no-store".to_owned()),
             ("x-content-type-options", "nosniff".to_owned()),
         ],
@@ -91,10 +91,10 @@ mod tests {
 
     #[test]
     fn a_redirect_carries_only_codes() {
-        let response = redirect(Tab::Clients, Notice::Expired);
+        let response = redirect(Screen::Add, Notice::Expired);
         assert_eq!(
             (response.status, response.header("location")),
-            (303, Some("/?tab=clients&msg=expired"))
+            (303, Some("/?view=add&msg=expired"))
         );
     }
 

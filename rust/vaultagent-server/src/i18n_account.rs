@@ -1,4 +1,4 @@
-//! Textes de l’onglet « Compte » : formulaire de connexion au coffre.
+//! Textes de la page « Coffre » : formulaire de connexion au coffre.
 
 /// Entrées (français, anglais, espagnol).
 pub const ENTRIES: &[(&str, &str, &str)] = &[
@@ -50,8 +50,8 @@ pub const ENTRIES: &[(&str, &str, &str)] = &[
     ),
     ("Vérifier et enregistrer", "Verify and save", "Verificar y guardar"),
     (
-        "Changer de compte révoque les clients associés. Windows Hello et les passkeys Windows ne sont pas fournis par ce serveur.",
-        "Changing accounts revokes paired clients. This server does not provide Windows Hello or Windows passkeys.",
-        "Cambiar de cuenta revoca los clientes asociados. Este servidor no proporciona Windows Hello ni passkeys de Windows.",
+        "Changer de compte retire tous les appareils.",
+        "Changing accounts removes all devices.",
+        "Cambiar de cuenta quita todos los dispositivos.",
     ),
 ];

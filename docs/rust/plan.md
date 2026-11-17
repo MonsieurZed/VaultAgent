@@ -159,6 +159,19 @@ Déroulé :
 | 6.4 | Interface : liste et carte des demandes, Accepter (biométrie) ou Refuser, réception ntfy (UnifiedPush ou abonnement ntfy). | essai à la main avec Zed |
 | 6.5 | Construction et publication de l'APK signé, mise à jour du catalogue Android et de la documentation. | installation sur le téléphone |
 
+### Phase 7 — Refonte de l'interface web (demande de Zed du 17/11/2026)
+
+Constat de Zed : l'interface `vaultagent.lan.zed.cx` est difficile à comprendre. Il veut tout revoir : plus d'erreur
+en JSON brut, des libellés clairs, une seule page centrée sur ce qui sert souvent, et aucun défilement, tout
+doit tenir à l'écran. Le front reste sans JavaScript, sous la même politique de sécurité du contenu.
+
+| Id | But | Test |
+|---|---|---|
+| 7.1 | Note de conception ([interface-web.md](interface-web.md), rédigée le 17/11/2026) : inventaire des écrans et actions, vocabulaire, organisation des onglets, maquette qui tient sans défilement sur l'écran de TowerZ, pages d'erreur lisibles. | relecture par Zed |
+| 7.2 | Erreurs : toute réponse d'erreur à une requête du navigateur devient une page ou un message lisible, les routes JSON gardent leur contrat. | cas dorés, tests du front |
+| 7.3 | Page unique, pages secondaires et libellés selon 7.1, en français et dans les autres langues du front. | tests du front, essai par Zed |
+| 7.4 | Mise en page sans défilement : listes longues paginées ou repliées. | essai par Zed sur TowerZ |
+
 ## Suivi
 
 | Phase | État | Tests |
@@ -168,6 +181,7 @@ Déroulé :
 | 2 | En cours : 2.1 (`vaultagent-engine`) et 2.2 (`vaultagent-server` : magasin, session, coffres) faites et vérifiées le 16/11/2026, non commitées (commit prévu en fin de phase). 16/11 : décision « que du Rust », phase 2 redécoupée (2.1a à 2.1d) ; 2.1a faite (prototype GO), 2.1b faite (trait `Engine` typé, faux moteur, pilote Node retiré) ; 2.1c et 2.1d faites ; 2.3 faite le 16/11/2026 (routes agent, cœur HTTP pur `route()`, 39 cas dorés rejoués) ; 2.4a faite le 16/11/2026 (routes administrateur, association, téléchargements, front Node servi tel quel, binaire sur `tiny_http`, 49 cas dorés rejoués) ; 2.4a faite ; 2.4b faite le 16/11/2026 (front HTML sans JavaScript rendu par Rust, formulaires POST /admin/*, 49 cas dorés rejoués dont front-index mis à jour) ; 2.5a faite ; 2.5b faite ; 2.6 faite le 16/11/2026 (image `vaultagent-rust:2cf7562` en service sur Maison, Caddy du stack durci, `/data` Node repris sans migration, déverrouillage et catalogue réels vérifiés ; reçu dans Reseau `progress/20261116-1520_vaultagent-serveur-rust_termine.md`). Phase 2 terminée ; suivant : phase 3 | 440 tests Rust |
 | 3 | Terminée le 16/11/2026 : 3.1 à 3.6 (client `vaultagent` : configuration privée au format Node, HTTPS `ureq` sans redirection, `pair-request`, lectures, écritures avec `--values-stdin`, `unlock`/`lock`, `seal` sans valeur en clair et `fill_with` en bibliothèque, aide et codes de sortie 0 à 5) ; 3.7 faite (binaire Linux x86-64 construit dans `rust:1.100.0-bookworm`, installé sur la VM Agents dans `~/.local/opt/vaultagent-rust/`, à côté du client Node ; `status`, `vaults` et `catalog` réels sur l'association existante). Suivant : phase 4 | 542 tests Rust |
 | 4 | En cours : 4.1 faite le 16/11/2026 (`vaultagent-win32` : fenêtre au premier plan, énumération, mise au premier plan, `SendInput` Unicode contrôlé caractère par caractère ; client : `TargetRequirement`, rapports, commandes `foreground`, `focus`, `type` avec code 3 et rapport sur stdout ; 4 tests Win32 réels lancés avec `--ignored`). 4.2 faite le 16/11/2026 (DPAPI : `protect` et `unprotect` de `vaultagent-win32` ; client : `remote-client.json` et `approval-key.dpapi` relus à l'identique du .NET, `pair-request --approver`, signature d'approbateur). 4.3 faite (essai UAC réel à faire avec Zed). 4.4 faite (essai Hello réel à faire avec Zed). 4.5a faite (route serveur, non déployée). 4.5b faite (essai à la main avec Zed à faire) | 658 tests Rust, 16 ignorés (dont 4 Win32 réels et 2 invites UAC) |
+| 7 | Code fait le 17/11/2026 : 7.1 (note `interface-web.md`, page unique validée par Zed), 7.2 (erreurs lisibles), 7.3 (page unique, pages secondaires, vocabulaire), 7.4 (sans défilement, pagination, confirmation du retrait, heure de Paris). Hors phase : `6b36943` (référent `same-origin`, révocation de nouveau possible). Essai par Zed sur TowerZ à faire | 765 tests Rust, 22 ignorés |
 
 ## Risques
 
