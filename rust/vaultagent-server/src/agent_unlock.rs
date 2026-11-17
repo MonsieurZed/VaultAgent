@@ -5,7 +5,9 @@
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
-use vaultagent_core::{ElevationEnrollInput, Env, HelloEnrollInput, Outcome, SignedDecisionInput, UnlockRequests};
+use vaultagent_core::{
+    ElevationDisableInput, ElevationEnrollInput, Env, HelloEnrollInput, Outcome, SignedDecisionInput, UnlockRequests,
+};
 
 use crate::context::Context;
 use crate::error::Result;
@@ -14,6 +16,7 @@ use crate::session::Session;
 use crate::shared_entropy::SharedEntropy;
 use crate::sync::locked;
 use crate::vaults::VaultContext;
+use vaultagent_core::ErrorCode;
 
 /// Exécute une opération sur les demandes du coffre avec l'environnement courant.
 ///
@@ -136,17 +139,28 @@ pub fn hello_enroll(context: &Context, vault: &VaultContext, device: &str, body:
     Ok(reply(&persist(vault, outcome)?))
 }
 
-/// `elevation-begin` : ouvre l'enrôlement de la clé d'élévation.
+/// `elevation-begin` : ouvre l'enrôlement ou le retrait de la clé d'élévation selon `purpose` (`enroll` par défaut).
 ///
-/// Paramètres : le contexte, le coffre, l'appareil.
-/// Retour : `{vaultId, requestId, challenge}`.
+/// Paramètres : le contexte, le coffre, l'appareil, le corps.
+/// Retour : `{vaultId, requestId, challenge}`, `requestId` valant `enroll-elevation` ou `disable-elevation`.
 ///
 /// # Errors
 ///
-/// `elevation-enrollment-refused`.
-pub fn elevation_begin(context: &Context, vault: &VaultContext, device: &str) -> Result<Response> {
+/// `elevation-enrollment-refused` ; pour `disable` : `approver-required`, `elevation-not-enrolled` ;
+/// `request-refused` si `purpose` n'est ni `enroll` ni `disable`.
+pub fn elevation_begin(context: &Context, vault: &VaultContext, device: &str, body: &Value) -> Result<Response> {
+    let disable = match body.get("purpose") {
+        None | Some(Value::Null) => false,
+        Some(Value::String(text)) if text == "enroll" => false,
+        Some(Value::String(text)) if text == "disable" => true,
+        Some(_) => return Err(ErrorCode::RequestRefused.into()),
+    };
     let answer = with_env(context, vault, |approvals, env| {
-        Ok(approvals.begin_elevation(device, env)?)
+        Ok(if disable {
+            approvals.begin_elevation_disable(device, env)?
+        } else {
+            approvals.begin_elevation(device, env)?
+        })
     })?;
     Ok(reply(&answer))
 }
@@ -163,6 +177,22 @@ pub fn elevation_enroll(context: &Context, vault: &VaultContext, device: &str, b
     let enrollment: ElevationEnrollInput = input(body);
     let outcome = with_env(context, vault, |approvals, env| {
         Ok(approvals.complete_elevation_enrollment(device, &enrollment, &context.origin, env)?)
+    })?;
+    Ok(reply(&persist(vault, outcome)?))
+}
+
+/// `elevation-disable` : retire la clé d'élévation sur une preuve signée par cette clé.
+///
+/// Paramètres : le contexte, le coffre, l'appareil, le corps.
+/// Retour : `{elevationEnabled:false, vaultId}`.
+///
+/// # Errors
+///
+/// `approver-required`, `elevation-not-enrolled`, `request-expired`, `approval-refused`.
+pub fn elevation_disable(context: &Context, vault: &VaultContext, device: &str, body: &Value) -> Result<Response> {
+    let removal: ElevationDisableInput = input(body);
+    let outcome = with_env(context, vault, |approvals, env| {
+        Ok(approvals.complete_elevation_disable(device, &removal, &context.origin, env)?)
     })?;
     Ok(reply(&persist(vault, outcome)?))
 }

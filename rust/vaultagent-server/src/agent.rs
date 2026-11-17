@@ -10,7 +10,8 @@ use crate::agent_seal::seal_field;
 use crate::agent_share::share;
 use crate::agent_status::{lock, status, vaults};
 use crate::agent_unlock::{
-    approval_context, decide_unlock, elevation_begin, elevation_enroll, hello_begin, hello_enroll, request_unlock,
+    approval_context, decide_unlock, elevation_begin, elevation_disable, elevation_enroll, hello_begin, hello_enroll,
+    request_unlock,
 };
 use crate::agent_write::write;
 use crate::context::Context;
@@ -73,7 +74,8 @@ pub fn handle(context: &Context, request: &Request, name: &str) -> Result<Respon
         "approval-context" => approval_context(context, &vault, &device),
         "hello-begin" => hello_begin(context, &vault, &device),
         "hello-enroll" => hello_enroll(context, &vault, &device, &body),
-        "elevation-begin" => elevation_begin(context, &vault, &device),
+        "elevation-begin" => elevation_begin(context, &vault, &device, &body),
+        "elevation-disable" => elevation_disable(context, &vault, &device, &body),
         "elevation-enroll" => elevation_enroll(context, &vault, &device, &body),
         "catalog" => {
             let _serial = vault.session.serial();

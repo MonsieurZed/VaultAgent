@@ -136,6 +136,29 @@ se fournissent par `--values-stdin` (un objet JSON `{username,password,totp,note
 | 5.2 | Retirer le serveur Node, `remote-client/`, le client WinForms, `vault.mjs` et le test de contrat `linux/test/contract.test.mjs` (seule exception JS, accordée par Zed le 15/11/2026 pour la tâche 0.3) ; mettre à jour README et `architecture.md`. |
 | 5.3 | Publier la release, mettre à jour `stacks/maison/vaultagent` et `stacks/agents`. |
 
+### Phase 6 — Approbateur Android (décision de Zed du 16/11/2026, après la phase 4)
+
+But : approuver un déverrouillage depuis le téléphone quand TowerZ est éteint. Le téléphone devient un second
+approbateur, au même niveau de sécurité que TowerZ.
+
+Déroulé :
+1. Un agent demande un déverrouillage.
+2. Le serveur publie une notification ntfy sur un sujet privé de `ntfy.zed.cx`. Elle ne contient aucun secret et ne
+   déclenche aucune action par elle-même.
+3. Un appui sur la notification ouvre l'application VaultAgent, qui affiche une carte : client demandeur, coffre,
+   échéance.
+4. « Accepter » demande l'empreinte ou le visage. Cette preuve libère une clé non exportable du Keystore Android
+   (StrongBox si disponible), qui signe le même message `VaultAgent.Unlock.v2` envoyé par `decide-unlock`.
+5. « Refuser » signe le refus sans biométrie.
+
+| Id | But | Test |
+|---|---|---|
+| 6.1 | Note de décision : chaîne de compilation Android en Rust (NDK, `cargo-apk` ou `xbuild`, JNI pour Keystore et `BiometricPrompt`, interface native minimale), signature de l'APK, distribution par le catalogue `zed.cx`. | relecture par Zed |
+| 6.2 | Serveur : approbateurs multiples par coffre (clé publique et type de preuve par appareil), preuve `keystore` (attestation de clé à l'enrôlement), notification ntfy à la création d'une demande. | cas dorés étendus, tests du serveur |
+| 6.3 | Crate Android : association par approbation web (`pair-request --approver`), clé Keystore protégée par biométrie, signature. | appareil réel |
+| 6.4 | Interface : liste et carte des demandes, Accepter (biométrie) ou Refuser, réception ntfy (UnifiedPush ou abonnement ntfy). | essai à la main avec Zed |
+| 6.5 | Construction et publication de l'APK signé, mise à jour du catalogue Android et de la documentation. | installation sur le téléphone |
+
 ## Suivi
 
 | Phase | État | Tests |
@@ -144,6 +167,7 @@ se fournissent par `--values-stdin` (un objet JSON `{username,password,totp,note
 | 1 | Terminée le 15/11/2026 : `vaultagent-core` complet (1.1 à 1.5) (`e3bf8d1`) | 203 tests Rust, 102 tests Node |
 | 2 | En cours : 2.1 (`vaultagent-engine`) et 2.2 (`vaultagent-server` : magasin, session, coffres) faites et vérifiées le 16/11/2026, non commitées (commit prévu en fin de phase). 16/11 : décision « que du Rust », phase 2 redécoupée (2.1a à 2.1d) ; 2.1a faite (prototype GO), 2.1b faite (trait `Engine` typé, faux moteur, pilote Node retiré) ; 2.1c et 2.1d faites ; 2.3 faite le 16/11/2026 (routes agent, cœur HTTP pur `route()`, 39 cas dorés rejoués) ; 2.4a faite le 16/11/2026 (routes administrateur, association, téléchargements, front Node servi tel quel, binaire sur `tiny_http`, 49 cas dorés rejoués) ; 2.4a faite ; 2.4b faite le 16/11/2026 (front HTML sans JavaScript rendu par Rust, formulaires POST /admin/*, 49 cas dorés rejoués dont front-index mis à jour) ; 2.5a faite ; 2.5b faite ; 2.6 faite le 16/11/2026 (image `vaultagent-rust:2cf7562` en service sur Maison, Caddy du stack durci, `/data` Node repris sans migration, déverrouillage et catalogue réels vérifiés ; reçu dans Reseau `progress/20261116-1520_vaultagent-serveur-rust_termine.md`). Phase 2 terminée ; suivant : phase 3 | 440 tests Rust |
 | 3 | Terminée le 16/11/2026 : 3.1 à 3.6 (client `vaultagent` : configuration privée au format Node, HTTPS `ureq` sans redirection, `pair-request`, lectures, écritures avec `--values-stdin`, `unlock`/`lock`, `seal` sans valeur en clair et `fill_with` en bibliothèque, aide et codes de sortie 0 à 5) ; 3.7 faite (binaire Linux x86-64 construit dans `rust:1.100.0-bookworm`, installé sur la VM Agents dans `~/.local/opt/vaultagent-rust/`, à côté du client Node ; `status`, `vaults` et `catalog` réels sur l'association existante). Suivant : phase 4 | 542 tests Rust |
+| 4 | En cours : 4.1 faite le 16/11/2026 (`vaultagent-win32` : fenêtre au premier plan, énumération, mise au premier plan, `SendInput` Unicode contrôlé caractère par caractère ; client : `TargetRequirement`, rapports, commandes `foreground`, `focus`, `type` avec code 3 et rapport sur stdout ; 4 tests Win32 réels lancés avec `--ignored`). 4.2 faite le 16/11/2026 (DPAPI : `protect` et `unprotect` de `vaultagent-win32` ; client : `remote-client.json` et `approval-key.dpapi` relus à l'identique du .NET, `pair-request --approver`, signature d'approbateur). 4.3 faite (essai UAC réel à faire avec Zed). 4.4 faite (essai Hello réel à faire avec Zed). 4.5a faite (route serveur, non déployée). 4.5b faite (essai à la main avec Zed à faire) | 658 tests Rust, 16 ignorés (dont 4 Win32 réels et 2 invites UAC) |
 
 ## Risques
 

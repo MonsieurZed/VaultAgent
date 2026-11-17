@@ -11,6 +11,9 @@ pub enum PairBody<'a> {
     Request {
         /// Nom de l'appareil.
         name: &'a str,
+        /// Clé publique d'approbateur (SPKI base64), absente sans `--approver`.
+        #[serde(rename = "approverPublicKey", skip_serializing_if = "Option::is_none")]
+        approver_public_key: Option<&'a str>,
     },
     /// Interrogation d'une demande ouverte.
     Poll {

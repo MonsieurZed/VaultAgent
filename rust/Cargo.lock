@@ -5135,10 +5135,12 @@ name = "vaultagent-client"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "p256 0.13.2",
  "serde",
  "serde_json",
  "ureq",
  "vaultagent-core",
+ "vaultagent-win32",
  "zeroize",
 ]
 
@@ -5205,6 +5207,10 @@ dependencies = [
 [[package]]
 name = "vaultagent-win32"
 version = "0.1.0"
+dependencies = [
+ "windows-sys 0.61.2",
+ "zeroize",
+]
 
 [[package]]
 name = "vcpkg"

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "name": "elevation-disable-refused",
+  "description": "Le retrait sans clé d'élévation enrôlée est refusé.",
+  "fixture": {
+    "vault": "locked",
+    "client": "approver"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/elevation-disable",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "signature": "x",
+      "elevationSignature": "x"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "error": "elevation-not-enrolled"
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "name": "elevation-disable-begin",
+  "description": "Un approbateur dont la clé d'élévation est enrôlée ouvre le retrait et reçoit un défi.",
+  "fixture": {
+    "vault": "locked",
+    "client": "elevated"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/agent/elevation-begin",
+    "headers": {
+      "authorization": "{{token}}",
+      "content-type": "application/json"
+    },
+    "body": {
+      "purpose": "disable"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    },
+    "body": {
+      "vaultId": "default",
+      "requestId": "disable-elevation",
+      "challenge": "{{base64}}"
+    }
+  }
+}

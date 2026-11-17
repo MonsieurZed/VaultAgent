@@ -1,4 +1,4 @@
-//! Rejeu des 49 cas dorés `rust/contrat/*.json` (agent, association, administration, front, téléchargements,
+//! Rejeu des 52 cas dorés `rust/contrat/*.json` (agent, association, administration, front, téléchargements,
 //! `/healthz`) contre `route()` et le faux moteur.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
@@ -45,6 +45,7 @@ fn service_for(case: &Value) -> Service {
     let client = match fixture["client"].as_str() {
         Some("none") => Client::None,
         Some("approver") => Client::Approver,
+        Some("elevated") => Client::Elevated,
         _ => Client::Paired,
     };
     Service::new(state, client)
@@ -134,7 +135,7 @@ fn every_golden_case_replays() {
         .collect();
     assert!(failures.is_empty(), "cas en échec :\n{}", failures.join("\n"));
     println!("{} cas rejoués", all.len());
-    assert_eq!(all.len(), 49);
+    assert_eq!(all.len(), 52);
 }
 
 #[test]

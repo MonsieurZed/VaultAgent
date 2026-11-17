@@ -46,7 +46,7 @@ Codes utiles aux clients : `vault-required` (jeton valable pour plusieurs coffre
 `write-indeterminate`, `invalid-share`, `organization-refused`, `duplicate-collection`, `share-indeterminate`,
 `request-expired`, `approver-required`, `approval-refused`, `elevation-required`, `hello-required`,
 `hello-invalid`, `hello-enrollment-refused`, `hello-enrollment-authorization-required`,
-`elevation-enrollment-refused`, `pairing-refused`, `pairing-rate-limit`, `pairing-limit`, `invalid-device`,
+`elevation-enrollment-refused`, `elevation-not-enrolled`, `pairing-refused`, `pairing-rate-limit`, `pairing-limit`, `invalid-device`,
 `device-limit`, `invalid-key`, `invalid-vault-registry`, `invalid-vault`, `invalid-vault-name`, `vault-limit`, `duplicate-account`, `engine-*` et `<module>:<raison>` (erreurs du moteur relayées).
 
 Règle client (Node et .NET) : `423` → coffre verrouillé ; `400` avec `vault-required` → choisir un coffre ; tout
@@ -72,8 +72,9 @@ Corps commun : `{"vaultId"?: string}` plus les champs de la route.
 | `approval-context` | `{}` | `{vaultId, requestId:"reset-auto", challenge}` |
 | `hello-begin` | `{}` | `{vaultId, requestId:"enroll-hello", challenge, helloCredential}` |
 | `hello-enroll` | `{credential, helloProof, signature}` | `{helloEnabled:true, helloRequired:true, vaultId}` |
-| `elevation-begin` | `{}` | `{vaultId, requestId:"enroll-elevation", challenge}` |
+| `elevation-begin` | `{purpose?:"enroll"\|"disable"}` | `{vaultId, requestId:"enroll-elevation"\|"disable-elevation", challenge}` |
 | `elevation-enroll` | `{publicKey, signature, elevationSignature}` | `{elevationEnabled:true, vaultId}` |
+| `elevation-disable` | `{signature, elevationSignature}` | `{elevationEnabled:false, vaultId}` |
 | `catalog` | `{search?}` (200 caractères gardés) | `[{id, name, organizationId, collectionIds, origins, username, password, totp}]` (booléens de présence) |
 | `seal` | `{itemId, field, origin, publicKey}` | enveloppe `{encryptedKey, nonce, tag, data}` |
 | `write-preview` | `{itemId?}` | sans `itemId` : `{folders:[{id,name}], items, trash}` ; avec : détail |
@@ -170,12 +171,27 @@ Fichiers : `GET /`, `/app.js`, `/style.css` (en-têtes CSP stricts, `referrer-po
 `GET /downloads/{windows-client.zip, linux-client.tar.gz}` et leurs `.sha256` en `application/octet-stream`
 (`404 download-unavailable` si absent).
 
+## Retrait de la clé d'élévation (ajout du 16/11/2026, tâche 4.5a)
+
+La version 1 du protocole est étendue de façon rétrocompatible : `purpose` est facultatif dans `elevation-begin`
+(absent ou `enroll` : comportement inchangé ; autre valeur que `enroll` ou `disable` : `request-refused`) et la route
+`elevation-disable` est nouvelle, avec le code `elevation-not-enrolled`. Les clients et serveurs antérieurs ne
+l'appellent pas et ne sont pas touchés.
+
+`elevation-begin {purpose:"disable"}` ouvre un contexte `disable-elevation` de 60 s, à usage unique ; il exige un
+approbateur (`approver-required`) dont la clé d'élévation est enrôlée (`elevation-not-enrolled`).
+`elevation-disable` vérifie dans l'ordre : approbateur (`approver-required`), clé d'élévation enrôlée
+(`elevation-not-enrolled`), contexte vivant (`request-expired`), `signature` de l'approbateur puis
+`elevationSignature` de la clé d'élévation enrôlée sur le message `approve:true, remember:false` du contexte
+(`approval-refused`). En cas de succès la clé d'élévation est effacée de `devices.json`, `approvalSecurity.elevationEnabled`
+passe à faux et les demandes en attente n'exigent plus `elevationSignature`. Format de `/data` inchangé.
+
 ## Messages signés
 
 Décision et enrôlements : JSON compact du tableau
 `["VaultAgent.Unlock.v2", origin, vaultId, requestId, challenge, approve, remember]`, signé en RSA-PSS SHA-256,
 sel 32 octets, par la clé d'approbateur (`signature`) et, si enrôlée, par la clé d'élévation
-(`elevationSignature`). `requestId` vaut `enroll-hello`, `enroll-elevation` ou `reset-auto` pour ces contextes.
+(`elevationSignature`). `requestId` vaut `enroll-hello`, `enroll-elevation`, `disable-elevation` ou `reset-auto` pour ces contextes.
 Preuve Hello : WebAuthn `get`, RP `vaultagent-client.local`, origine `https://vaultagent-client.local`, défi =
 `base64url(sha256(message))`, drapeaux UP et UV, signature ECDSA P-256 (DER) ou RSA PKCS#1 v1.5.
 

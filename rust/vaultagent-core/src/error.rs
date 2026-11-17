@@ -80,6 +80,7 @@ error_codes! {
     HelloEnrollmentRefused => "hello-enrollment-refused",
     HelloEnrollmentAuthorizationRequired => "hello-enrollment-authorization-required",
     ElevationEnrollmentRefused => "elevation-enrollment-refused",
+    ElevationNotEnrolled => "elevation-not-enrolled",
     PairingRefused => "pairing-refused",
     PairingRateLimit => "pairing-rate-limit",
     PairingLimit => "pairing-limit",

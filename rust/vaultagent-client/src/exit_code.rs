@@ -9,7 +9,7 @@ pub enum ExitCode {
     Usage,
     /// Refus du serveur.
     Refused,
-    /// Cible refusée (fenêtre), utilisé par la saisie de la phase 4.
+    /// Cible refusée (fenêtre), rendu par `focus` et `type` avec le rapport sur stdout.
     TargetRefused,
     /// Coffre verrouillé (HTTP 423).
     Locked,

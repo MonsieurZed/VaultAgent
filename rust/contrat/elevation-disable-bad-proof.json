@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "name": "elevation-disable-bad-proof",
+  "description": "Une preuve invalide après l'ouverture du contexte est refusée.",
+  "fixture": {
+    "vault": "locked",
+    "client": "elevated"
+  },
+  "steps": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/agent/elevation-begin",
+        "headers": {
+          "authorization": "{{token}}",
+          "content-type": "application/json"
+        },
+        "body": {
+          "purpose": "disable"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff"
+        },
+        "body": {
+          "vaultId": "default",
+          "requestId": "disable-elevation",
+          "challenge": "{{base64}}"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/agent/elevation-disable",
+        "headers": {
+          "authorization": "{{token}}",
+          "content-type": "application/json"
+        },
+        "body": {
+          "signature": "x",
+          "elevationSignature": "x"
+        }
+      },
+      "response": {
+        "status": 400,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff"
+        },
+        "body": {
+          "error": "approval-refused"
+        }
+      }
+    }
+  ]
+}

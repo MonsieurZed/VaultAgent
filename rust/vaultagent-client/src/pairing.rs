@@ -62,8 +62,8 @@ fn outcome(polled: &Polled) -> Result<Option<Paired>, ClientError> {
 
 /// Ouvre une demande d'association et attend l'approbation.
 ///
-/// Paramètres : le transport vers le serveur, son adresse (pour les consignes), le nom de l'appareil, l'attente
-/// injectée, la sortie des consignes (stderr).
+/// Paramètres : le transport vers le serveur, son adresse (pour les consignes), le nom de l'appareil, la clé publique
+/// d'approbateur à enregistrer (ou `None`), l'attente injectée, la sortie des consignes (stderr).
 /// Retour : le jeton et le coffre ; `PairingDenied` si l'administrateur refuse, `PairingExpired` si la durée de la
 /// demande s'écoule sans réponse (comptée en pas de 2 s), ou l'erreur du serveur ou du transport.
 ///
@@ -74,10 +74,17 @@ pub fn pair_request(
     transport: &dyn Transport,
     server: &ServerAddress,
     name: &str,
+    approver_public_key: Option<&str>,
     pause: &mut dyn Pause,
     notice: &mut dyn Write,
 ) -> Result<Paired, ClientError> {
-    let text = pair_call(transport, &PairBody::Request { name })?;
+    let text = pair_call(
+        transport,
+        &PairBody::Request {
+            name,
+            approver_public_key,
+        },
+    )?;
     let opened: Opened = decode(&text)?;
     announce(notice, server, &opened);
     let limit = Duration::from_secs(opened.expires_in_seconds);
@@ -112,7 +119,7 @@ mod tests {
         let server = ServerAddress::parse("https://vault.example.test").unwrap();
         let mut pause = RecordedPause::default();
         let mut notice = Vec::new();
-        let result = pair_request(transport, &server, "Machine", &mut pause, &mut notice);
+        let result = pair_request(transport, &server, "Machine", None, &mut pause, &mut notice);
         (result, pause, String::from_utf8(notice).unwrap())
     }
 

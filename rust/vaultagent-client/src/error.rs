@@ -3,6 +3,7 @@
 use serde::Serialize;
 
 use crate::exit_code::ExitCode;
+use crate::target_report::TargetRefusal;
 
 /// Version du format de la ligne d'erreur.
 const ERROR_VERSION: u8 = 1;
@@ -33,6 +34,22 @@ pub enum ClientError {
     PairingDenied,
     /// Demande d'association expirée sans réponse.
     PairingExpired,
+    /// Cible de saisie refusée (fenêtre absente, changée ou non conforme) ; le rapport complet est porté.
+    TargetRefused(Box<TargetRefusal>),
+    /// Échec d'une opération de fenêtre du système (frappe refusée par Windows).
+    Window(String),
+    /// La commande exige un processus élevé (administrateur).
+    ElevationRequired,
+    /// L'utilisateur a annulé l'invite Windows (contrôle de compte).
+    ElevationCancelled,
+    /// La validation Windows a échoué ou expiré.
+    Elevation(String),
+    /// La preuve Windows Hello est demandée mais indisponible sur ce poste.
+    HelloUnavailable,
+    /// L'utilisateur a annulé l'invite Windows Hello.
+    HelloCancelled,
+    /// La preuve ou l'enregistrement Windows Hello a échoué ou n'a pas passé la vérification locale.
+    Hello(String),
 }
 
 /// Code du serveur pour une écriture dont le résultat est inconnu.
@@ -64,6 +81,14 @@ impl ClientError {
             Self::BadResponse(_) => "bad-response",
             Self::PairingDenied => "pairing-denied",
             Self::PairingExpired => "pairing-expired",
+            Self::TargetRefused(_) => "target-refused",
+            Self::Window(_) => "window",
+            Self::ElevationRequired => "elevation-required",
+            Self::ElevationCancelled => "elevation-cancelled",
+            Self::Elevation(_) => "elevation-failed",
+            Self::HelloUnavailable => "hello-unavailable",
+            Self::HelloCancelled => "hello-cancelled",
+            Self::Hello(_) => "hello-failed",
         }
     }
 
@@ -73,32 +98,51 @@ impl ClientError {
     #[must_use]
     pub fn message(&self) -> String {
         match self {
-            Self::Usage(text) | Self::Config(text) | Self::Unreachable(text) | Self::BadResponse(text) => text.clone(),
+            Self::Usage(text)
+            | Self::Config(text)
+            | Self::Unreachable(text)
+            | Self::BadResponse(text)
+            | Self::Window(text)
+            | Self::Elevation(text)
+            | Self::Hello(text) => text.clone(),
+            Self::TargetRefused(refusal) => refusal.reason.clone(),
             Self::Server { code, .. } if code == WRITE_INDETERMINATE => WRITE_ADVICE.to_owned(),
             Self::WriteIndeterminate => WRITE_ADVICE.to_owned(),
             Self::Server { status, code } => format!("Server refused the request (HTTP {status}, {code})."),
             Self::Indeterminate => "No answer after sending; the outcome is unknown.".to_owned(),
             Self::PairingDenied => "Pairing request denied.".to_owned(),
             Self::PairingExpired => "Pairing request expired.".to_owned(),
+            Self::ElevationRequired => "This command needs an elevated (administrator) process.".to_owned(),
+            Self::ElevationCancelled => "The Windows validation was cancelled.".to_owned(),
+            Self::HelloUnavailable => "Windows Hello is required but unavailable on this PC.".to_owned(),
+            Self::HelloCancelled => "The Windows Hello prompt was cancelled.".to_owned(),
         }
     }
 
     /// Code de sortie du processus pour cette erreur.
     ///
-    /// Retour : 1 pour usage et configuration, 4 pour un coffre verrouillé (423), 5 pour un résultat indéterminé,
+    /// Retour : 1 pour usage et configuration, 3 pour une cible refusée, 4 pour un coffre verrouillé (423), 5 pour un résultat indéterminé,
     /// 2 pour tout autre refus.
     #[must_use]
     pub fn exit_code(&self) -> ExitCode {
         match self {
             Self::Usage(_) | Self::Config(_) => ExitCode::Usage,
             Self::Server { status: 423, .. } => ExitCode::Locked,
+            Self::TargetRefused(_) => ExitCode::TargetRefused,
             Self::Indeterminate | Self::WriteIndeterminate => ExitCode::Indeterminate,
             Self::Server { code, .. } if code == WRITE_INDETERMINATE => ExitCode::Indeterminate,
             Self::Server { .. }
             | Self::Unreachable(_)
             | Self::BadResponse(_)
             | Self::PairingDenied
-            | Self::PairingExpired => ExitCode::Refused,
+            | Self::PairingExpired
+            | Self::Window(_)
+            | Self::ElevationRequired
+            | Self::ElevationCancelled
+            | Self::Elevation(_)
+            | Self::HelloUnavailable
+            | Self::HelloCancelled
+            | Self::Hello(_) => ExitCode::Refused,
         }
     }
 
@@ -122,6 +166,7 @@ impl ClientError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::target_report::WindowDescription;
 
     #[test]
     fn locked_status_maps_to_exit_four() {
@@ -156,6 +201,25 @@ mod tests {
             };
             assert_eq!(error.exit_code(), ExitCode::Refused);
         }
+    }
+
+    #[test]
+    fn target_refusal_maps_to_exit_three_and_keeps_its_reason() {
+        let refusal = TargetRefusal {
+            reason: "The foreground window changed.".to_owned(),
+            expected: WindowDescription {
+                process: "chrome".to_owned(),
+                title: "Ma banque".to_owned(),
+            },
+            foreground: None,
+        };
+        let error = ClientError::TargetRefused(Box::new(refusal));
+        assert_eq!(error.exit_code(), ExitCode::TargetRefused);
+        assert_eq!(error.code(), "target-refused");
+        assert_eq!(error.message(), "The foreground window changed.");
+        let window = ClientError::Window("SendInput failed with Win32 error 5.".to_owned());
+        assert_eq!(window.exit_code(), ExitCode::Refused);
+        assert_eq!(window.code(), "window");
     }
 
     #[test]

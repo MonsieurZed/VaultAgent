@@ -11,3 +11,9 @@ workspace = true
 
 [package.metadata.conduite]
 unsafe = "FFI Win32 : fenêtres, SendInput, DPAPI, NCrypt, WebAuthn, icône de barre"
+
+[dependencies]
+zeroize.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-sys.workspace = true

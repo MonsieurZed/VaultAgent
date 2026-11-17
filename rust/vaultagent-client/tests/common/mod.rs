@@ -2,6 +2,8 @@
 
 #![allow(dead_code, clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+pub mod fake_windows;
+
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -10,6 +12,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use clap::Parser;
 use vaultagent_client::cli::Cli;
 use vaultagent_client::exit_code::ExitCode;
+use vaultagent_client::fake_elevation::FakeElevation;
+use vaultagent_client::fake_hello::FakeHello;
 use vaultagent_client::fake_transport::FakeTransport;
 use vaultagent_client::pause::RecordedPause;
 use vaultagent_client::run::{Runtime, run};
@@ -100,12 +104,40 @@ pub fn execute(fake: &Rc<FakeTransport>, args: &[&str]) -> Outcome {
 
 /// Exécute `vaultagent <args>` avec un contenu d'entrée standard donné.
 pub fn execute_with_input(fake: &Rc<FakeTransport>, args: &[&str], input: &[u8]) -> Outcome {
+    execute_in(fake, args, input, None)
+}
+
+/// Exécute `vaultagent <args>` avec un dossier de données injecté (jamais celui de l'utilisateur).
+pub fn execute_in(
+    fake: &Rc<FakeTransport>,
+    args: &[&str],
+    input: &[u8],
+    local_data: Option<&std::path::Path>,
+) -> Outcome {
+    let system = FakeElevation::standard("S-1-5-21-1-2-3-1001", Box::new(|_| Ok(1)));
+    execute_elevated(fake, args, input, (local_data, None), &system)
+}
+
+/// Exécute `vaultagent <args>` avec dossiers de données et système d'élévation injectés.
+pub fn execute_elevated(
+    fake: &Rc<FakeTransport>,
+    args: &[&str],
+    input: &[u8],
+    folders: (Option<&std::path::Path>, Option<&std::path::Path>),
+    system: &FakeElevation,
+) -> Outcome {
+    let (local_data, program_data) = folders;
     let cli = Cli::try_parse_from(std::iter::once("vaultagent").chain(args.iter().copied())).unwrap();
     let shared = Rc::clone(fake);
     let factory = move |_address: &ServerAddress| -> Box<dyn Transport> { Box::new(Shared(Rc::clone(&shared))) };
     let mut pause = RecordedPause::default();
     let mut runtime = Runtime {
         home: None,
+        local_data: local_data.map(std::path::Path::to_path_buf),
+        program_data: program_data.map(std::path::Path::to_path_buf),
+        temp_dir: std::env::temp_dir(),
+        elevation: system,
+        hello: &FakeHello::unavailable(),
         machine_name: "test-machine".to_owned(),
         transports: &factory,
         pause: &mut pause,

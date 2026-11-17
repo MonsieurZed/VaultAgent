@@ -33,6 +33,7 @@ pub enum Client {
     None,
     Paired,
     Approver,
+    Elevated,
 }
 
 /// Service de test.
@@ -69,7 +70,13 @@ impl Service {
         }
         let token = (client != Client::None && state != VaultState::Unconfigured).then(|| {
             let profile = vault.store.account().unwrap().profile;
-            let key = (client == Client::Approver).then_some("approver-public-key-factice");
+            let approver = matches!(client, Client::Approver | Client::Elevated);
+            let real = include_str!("../fixtures/rsa-public.txt").trim();
+            let key = approver.then_some(if client == Client::Elevated {
+                real
+            } else {
+                "approver-public-key-factice"
+            });
             let name = if key.is_some() {
                 "Approbateur factice"
             } else {
@@ -84,6 +91,10 @@ impl Service {
                 &mut SeededEntropy::new(11),
             )
             .unwrap();
+            let mut records = records;
+            if client == Client::Elevated {
+                records.last_mut().unwrap().elevation_public_key = Some(real.to_owned());
+            }
             vault.store.update_devices(|_| Ok(records)).unwrap();
             enrolled.token.to_string()
         });

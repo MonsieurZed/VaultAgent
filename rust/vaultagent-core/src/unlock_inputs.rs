@@ -46,3 +46,13 @@ pub struct ElevationEnrollInput {
     /// Signature de la clé d'élévation sur le même message, base64.
     pub elevation_signature: Option<String>,
 }
+
+/// Corps de `elevation-disable`.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ElevationDisableInput {
+    /// Signature RSA-PSS de l'approbateur, base64.
+    pub signature: Option<String>,
+    /// Signature de la clé d'élévation enrôlée sur le même message, base64.
+    pub elevation_signature: Option<String>,
+}

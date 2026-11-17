@@ -25,7 +25,7 @@ pub(crate) fn elevation_of(record: &DeviceRecord) -> Option<&str> {
 
 impl UnlockRequests {
     /// Enregistre un défi de contexte sous une clé.
-    fn open_context(&mut self, key: String, challenge: &str, now: u64) {
+    pub(crate) fn open_context(&mut self, key: String, challenge: &str, now: u64) {
         let context = Context {
             challenge: challenge.to_owned(),
             expires: now + CONTEXT_LIFETIME_MS,
@@ -59,7 +59,7 @@ impl UnlockRequests {
     }
 
     /// Réponse portant le défi d'un contexte.
-    fn context_reply(&self, request_id: &str, challenge: String) -> ContextReply {
+    pub(crate) fn context_reply(&self, request_id: &str, challenge: String) -> ContextReply {
         ContextReply {
             vault_id: self.vault_id.clone(),
             request_id: request_id.to_owned(),

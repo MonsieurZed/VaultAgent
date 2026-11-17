@@ -4,9 +4,11 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
+use crate::approval_commands::{ApprovalCommand, ElevationSignArgs};
 use crate::help;
 use crate::reads::ReadCommand;
 use crate::seal::SealArgs;
+use crate::window_args::{TypeArgs, WindowArgs};
 use crate::write::WriteCommand;
 use crate::write_args::{CreateArgs, FolderAction, TargetArgs, UpdateArgs};
 
@@ -52,6 +54,9 @@ pub enum Command {
         /// Nom de l'appareil, par défaut celui de la machine.
         #[arg(help = "Device name (default: the machine name).")]
         name: Option<String>,
+        /// Enregistre la clé d'approbateur de ce poste (Windows, stockage protégé).
+        #[arg(long, help = "Register this PC's approver key (Windows protected store).")]
+        approver: bool,
     },
     /// État du coffre et de la demande de déverrouillage.
     #[command(about = "Vault state and pending unlock request.", after_help = help::STATUS)]
@@ -114,6 +119,24 @@ pub enum Command {
     /// Rend une enveloppe chiffrée pour une clé publique ; aucune valeur en clair ne sort.
     #[command(about = "Return a field as an envelope encrypted for a public key; no clear value is printed.", after_help = help::SEAL)]
     Seal(SealArgs),
+    /// Décrit la fenêtre au premier plan (Windows).
+    #[command(about = "Describe the foreground window, to choose --process and --title (Windows).", after_help = help::FOREGROUND)]
+    Foreground,
+    /// Met au premier plan l'unique fenêtre qui correspond à la cible (Windows).
+    #[command(about = "Bring the single matching window to the foreground (Windows).", after_help = help::FOCUS)]
+    Focus(WindowArgs),
+    /// Tape un champ de fiche dans la fenêtre cible, sans presse-papiers (Windows).
+    #[command(about = "Type a field into the target window, checking it before every character (Windows).", after_help = help::TYPE)]
+    Type(TypeArgs),
+    /// Application de barre : carte d'approbation, association, validation en une étape (Windows).
+    #[command(about = "Run the tray app: approval cards, pairing, card or UAC validation (Windows).", after_help = help::TRAY)]
+    Tray,
+    /// Commandes d'approbation : `approvals`, `decide`, `elevation-enroll`.
+    #[command(flatten)]
+    Approval(ApprovalCommand),
+    /// Signature par la clé d'élévation, lancée par le client lui-même avec élévation.
+    #[command(name = "elevation-sign", hide = true)]
+    ElevationSign(ElevationSignArgs),
 }
 
 impl Command {
@@ -131,7 +154,13 @@ impl Command {
             | Self::Folder { .. }
             | Self::Unlock { .. }
             | Self::Lock
-            | Self::Seal(_) => None,
+            | Self::Seal(_)
+            | Self::Foreground
+            | Self::Tray
+            | Self::Focus(_)
+            | Self::Type(_)
+            | Self::Approval(_)
+            | Self::ElevationSign(_) => None,
             Self::Status => Some(ReadCommand::Status),
             Self::Vaults => Some(ReadCommand::Vaults),
             Self::Sharing => Some(ReadCommand::Sharing),
@@ -217,6 +246,40 @@ mod tests {
             Command::Unlock { wait: -3 }
         ));
         assert!(matches!(parse(&["lock"]).unwrap().command, Command::Lock));
+    }
+
+    #[test]
+    fn window_commands_parse_with_their_target() {
+        assert!(matches!(parse(&["foreground"]).unwrap().command, Command::Foreground));
+        let focus = parse(&["focus", "--process", "chrome", "--title", "Ma banque"]).unwrap();
+        assert!(
+            matches!(focus.command, Command::Focus(ref args) if args.process == "chrome" && args.title == "Ma banque")
+        );
+        let typing = parse(&[
+            "type",
+            "0000000a-0000-4000-8000-00000000000c",
+            "password",
+            "https://example.test",
+            "--process",
+            "chrome",
+            "--title",
+            "Ma banque",
+            "--vault",
+            "v",
+        ])
+        .unwrap();
+        assert!(
+            matches!(typing.command, Command::Type(ref args) if args.field == "password" && args.window.process == "chrome")
+        );
+        assert_eq!(typing.vault.as_deref(), Some("v"));
+        assert!(typing.command.read().is_none() && typing.command.write().is_none());
+    }
+
+    #[test]
+    fn window_commands_need_both_target_options() {
+        assert!(parse(&["focus", "--process", "chrome"]).is_err());
+        assert!(parse(&["focus", "--title", "Ma banque"]).is_err());
+        assert!(parse(&["type", "i", "password", "https://example.test", "--process", "chrome"]).is_err());
     }
 
     #[test]

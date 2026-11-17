@@ -122,6 +122,16 @@ pub struct ElevationEnrolled {
     pub vault_id: String,
 }
 
+/// Réponse d'un retrait de clé d'élévation réussi.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ElevationDisabled {
+    /// Toujours faux.
+    pub elevation_enabled: bool,
+    /// Coffre concerné.
+    pub vault_id: String,
+}
+
 /// Réponse de `reset-auto` : l'acceptation automatique est retirée à tous les appareils.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]

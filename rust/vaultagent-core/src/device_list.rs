@@ -153,3 +153,19 @@ pub fn enroll_elevation(
     next[index].elevation_public_key = Some(public_key.to_owned());
     Ok(next)
 }
+
+/// Retire la clé publique d'élévation d'un appareil.
+///
+/// Paramètres : la liste, l'identifiant, le profil.
+/// Retour : la nouvelle liste.
+/// # Errors
+///
+/// `elevation-not-enrolled` si l'appareil est absent ou sans clé d'élévation.
+pub fn disable_elevation(records: &[DeviceRecord], id: &str, profile: &str) -> Result<Vec<DeviceRecord>> {
+    let index = position(records, id, profile)
+        .filter(|index| present(records[*index].elevation_public_key.as_deref()))
+        .ok_or(ErrorCode::ElevationNotEnrolled)?;
+    let mut next = records.to_vec();
+    next[index].elevation_public_key = None;
+    Ok(next)
+}
