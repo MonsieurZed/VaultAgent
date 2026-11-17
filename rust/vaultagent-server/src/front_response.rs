@@ -11,6 +11,10 @@ frame-ancestors 'none'; base-uri 'none'";
 
 const STYLE: &str = include_str!("../assets/style.css");
 
+/// Politique de référent : rien hors de l'origine ; `no-referrer` ferait poster les formulaires avec `Origin: null`,
+/// que le contrôle d'origine des actions refuse.
+pub const REFERRER_POLICY: &str = "same-origin";
+
 /// En-têtes de sécurité communs aux fichiers du front.
 fn secured(kind: &str) -> Vec<(&'static str, String)> {
     vec![
@@ -18,7 +22,7 @@ fn secured(kind: &str) -> Vec<(&'static str, String)> {
         ("cache-control", "no-store".to_owned()),
         ("content-security-policy", CONTENT_SECURITY_POLICY.to_owned()),
         ("x-content-type-options", "nosniff".to_owned()),
-        ("referrer-policy", "no-referrer".to_owned()),
+        ("referrer-policy", REFERRER_POLICY.to_owned()),
     ]
 }
 
@@ -77,6 +81,12 @@ mod tests {
     fn the_policy_forbids_scripts() {
         assert!(CONTENT_SECURITY_POLICY.starts_with("default-src 'none'"));
         assert!(!CONTENT_SECURITY_POLICY.contains("script-src"));
+    }
+
+    #[test]
+    fn the_page_keeps_the_form_origin_and_hides_it_elsewhere() {
+        let response = page(String::new(), None);
+        assert_eq!(response.header("referrer-policy"), Some("same-origin"));
     }
 
     #[test]

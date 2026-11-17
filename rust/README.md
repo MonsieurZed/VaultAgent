@@ -254,7 +254,7 @@ binaire par `include_str!`, `assets/style.css`). Le front de `linux/web/` n'est 
   Messages : `?msg=saved|refused|login-refused|duplicate-account|expired`, des codes traduits au rendu.
 - **Langue** : `?lang=fr|en|es` pose le cookie `vaultagent-language` (`Path=/; SameSite=Strict; HttpOnly; Secure`) ; français par défaut.
 - **Sécurité** : aucun `<script>` ni attribut `on*` ; `Content-Security-Policy: default-src 'none'; style-src 'self'; img-src 'self';
-  form-action 'self'; frame-ancestors 'none'; base-uri 'none'`, plus `no-store`, `nosniff`, `no-referrer`. Toute donnée insérée passe par
+  form-action 'self'; frame-ancestors 'none'; base-uri 'none'`, plus `no-store`, `nosniff`, `same-origin` (avec `no-referrer`, les formulaires partiraient avec `Origin: null`). Toute donnée insérée passe par
   `front_escape::escape`. Mot de passe et codes 2FA : jamais renvoyés (champs vides), jamais dans une URL.
 - **Actions** : formulaires `POST /admin/<configure|unlock|lock|pairing|pair-decide|decide-unlock|auto-unlock|revoke>` en
   `application/x-www-form-urlencoded`. Le propriétaire est contrôlé par `route`, l'en-tête `origin` doit valoir `VAULTAGENT_ORIGIN`

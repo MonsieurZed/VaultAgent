@@ -167,7 +167,7 @@ expiresInSeconds}]}`. Les autres sont `POST` avec `origin` = origine du service,
 | `revoke` | `{deviceId}` | `{revoked:true}` (verrouille le coffre) |
 | `write-preview`, `write` | comme côté agent | idem |
 
-Fichiers : `GET /`, `/app.js`, `/style.css` (en-têtes CSP stricts, `referrer-policy: no-referrer`) ;
+Fichiers : `GET /`, `/app.js`, `/style.css` (en-têtes CSP stricts, `referrer-policy: same-origin`) ;
 `GET /downloads/{windows-client.zip, linux-client.tar.gz}` et leurs `.sha256` en `application/octet-stream`
 (`404 download-unavailable` si absent).
 

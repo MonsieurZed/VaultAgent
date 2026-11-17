@@ -70,7 +70,7 @@ fn the_style_sheet_carries_its_type_and_the_script_free_policy() {
         (response.status, response.header("content-type")),
         (200, Some("text/css; charset=utf-8"))
     );
-    assert_eq!(response.header("referrer-policy"), Some("no-referrer"));
+    assert_eq!(response.header("referrer-policy"), Some("same-origin"));
     let policy = response.header("content-security-policy").unwrap();
     assert!(policy.contains("frame-ancestors 'none'") && !policy.contains("script-src"));
     assert!(String::from_utf8(response.body).unwrap().contains(".status"));
