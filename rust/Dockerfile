@@ -3,7 +3,8 @@ WORKDIR /build
 COPY rust ./
 
 FROM base AS test
-RUN cargo test --locked -j 2 && rm -rf target
+ENV CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
+RUN cargo test --locked -j 1 && rm -rf target
 
 FROM base AS builder
 RUN cargo build --release --locked -j 2 -p vaultagent-server \

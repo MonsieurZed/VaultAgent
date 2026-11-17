@@ -196,8 +196,9 @@ parcours configure, code, association, statut agent, front ; proxy ; limites ; c
 ## `vaultagent-server` : image Docker et sonde de santé (tâche 2.5a)
 
 `rust/Dockerfile` : le contexte est la **racine du dépôt** (le Dockerfile copie `rust/` et les trois fichiers de licence).
-Étapes : `base` (`rust:1.100.0-bookworm` épinglée par digest, copie de `rust/`), `test` (`cargo test --locked -j 2`, puis
-`rm -rf target` dans la même couche, sinon la couche du dossier `target` sature le disque), `builder`
+Étapes : `base` (`rust:1.100.0-bookworm` épinglée par digest, copie de `rust/`), `test` (`cargo test --locked -j 1` sans informations de débogage, puis
+`rm -rf target` dans la même couche, sinon la couche du dossier `target` sature le disque ; avec `-j 2` et le débogage, `rustc`
+manque de mémoire sur la VM Agents de 3,8 Go, le 17/11/2026 : arrêter aussi les conteneurs de test avant de construire), `builder`
 (`cargo build --release --locked -p vaultagent-server`), puis l'image finale `debian:bookworm-slim` (digest) avec
 `ca-certificates`, le binaire `/usr/local/bin/vaultagent-server`, `LICENSE`, `LICENSE-GPL.txt` et `THIRD-PARTY.md` dans `/app`.
 `USER 1000:1000`, `EXPOSE 8080`, `/data` appartient à 1000. Aucun script ni Node ; `assets/style.css` est dans le binaire.
