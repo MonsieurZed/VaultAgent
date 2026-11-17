@@ -45,4 +45,11 @@ pub const ENTRIES: &[(&str, &str, &str)] = &[
         "Esta solicitud ha caducado.",
     ),
     ("Langue", "Language", "Idioma"),
+    ("Coffre", "Vault", "Bóveda"),
+    ("Rien à valider", "Nothing to approve", "Nada que aprobar"),
+    (
+        "La page se met à jour seule.",
+        "The page updates by itself.",
+        "La página se actualiza sola.",
+    ),
 ];

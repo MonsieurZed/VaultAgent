@@ -12,8 +12,8 @@ use crate::front_view::render;
 use crate::http::{Request, Response};
 use crate::query::query_param;
 
-/// Rend la page principale, ou la page secondaire de `?view=` (le formulaire du coffre tant que rien n'est
-/// configuré), avec `?msg=`, `?lang=`, `?page=` et `?confirm=` ; un `?lang=` valide est mémorisé dans le cookie. Un ancien `?tab=` est ignoré.
+/// Rend la page principale, le mode « Modifier » `?view=vault` (d'office tant que rien n'est
+/// configuré) ou l'aide `?view=help`, avec `?msg=`, `?lang=`, `?page=` et `?confirm=` ; un `?lang=` valide est mémorisé dans le cookie. Un ancien `?tab=` est ignoré.
 ///
 /// Paramètres : le contexte, la requête (propriétaire déjà contrôlé).
 /// Retour : la réponse HTML.

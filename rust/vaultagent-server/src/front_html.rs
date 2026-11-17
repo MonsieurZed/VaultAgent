@@ -1,4 +1,4 @@
-//! Éléments HTML élémentaires du front et contexte de rendu partagé par tous les organismes de la page.
+//! Éléments HTML élémentaires du front (champs, formulaires, titres de bloc) et contexte de rendu partagé par tous les organismes de la page.
 
 use crate::admin_state::State;
 use crate::front_escape::escape;
@@ -49,6 +49,16 @@ pub fn form_open(action: &str, class: &str) -> String {
     format!("<form method=\"post\" action=\"/admin/{}\"{class}>", escape(action))
 }
 
+/// Titre d'un bloc, avec son compteur en pastille.
+///
+/// Paramètres : le libellé déjà échappé, le compteur éventuel.
+/// Retour : l'élément `<h2>`.
+#[must_use]
+pub fn block_title(label: &str, count: Option<usize>) -> String {
+    let badge = count.map_or_else(String::new, |value| format!(" <span class=\"count\">{value}</span>"));
+    format!("<h2>{label}{badge}</h2>")
+}
+
 /// Attribut `disabled` ou rien.
 ///
 /// Paramètres : l'élément est-il désactivé.
@@ -67,6 +77,15 @@ mod tests {
         assert_eq!(
             hidden("id", "a\"><script>"),
             "<input type=\"hidden\" name=\"id\" value=\"a&quot;&gt;&lt;script&gt;\">"
+        );
+    }
+
+    #[test]
+    fn a_block_title_shows_its_counter_only_when_given() {
+        assert_eq!(block_title("Appareils", None), "<h2>Appareils</h2>");
+        assert_eq!(
+            block_title("Appareils", Some(3)),
+            "<h2>Appareils <span class=\"count\">3</span></h2>"
         );
     }
 

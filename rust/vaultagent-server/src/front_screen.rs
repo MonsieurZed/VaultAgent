@@ -1,14 +1,12 @@
-//! Écrans de la page : la page principale `/` et les pages secondaires `/?view=vault|add|help`.
+//! Écrans de la page : la page principale `/`, le mode « Modifier » `/?view=vault` et l'aide `/?view=help`.
 
 /// Écran affiché.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Screen {
-    /// Page principale : barre d'état, coffre, demandes et appareils.
+    /// Page principale : les quatre blocs Coffre, À valider, Appareils et Ajouter un appareil.
     Main,
-    /// Formulaire du coffre.
+    /// Mode « Modifier » : le formulaire du coffre prend la place du bloc Coffre.
     Vault,
-    /// Ajout d'un appareil.
-    Add,
     /// Aide.
     Help,
 }
@@ -16,11 +14,11 @@ pub enum Screen {
 impl Screen {
     /// Lit la valeur du paramètre `view`.
     ///
-    /// Paramètres : `vault`, `add` ou `help`.
+    /// Paramètres : `vault` ou `help`.
     /// Retour : la page secondaire, ou `None` pour tout autre texte (la page principale s'affiche alors).
     #[must_use]
     pub fn parse(code: &str) -> Option<Self> {
-        [Self::Vault, Self::Add, Self::Help]
+        [Self::Vault, Self::Help]
             .into_iter()
             .find(|screen| screen.code() == Some(code))
     }
@@ -34,7 +32,6 @@ impl Screen {
         match self {
             Self::Main => None,
             Self::Vault => Some("vault"),
-            Self::Add => Some("add"),
             Self::Help => Some("help"),
         }
     }
@@ -74,10 +71,11 @@ mod tests {
 
     #[test]
     fn secondary_codes_round_trip_and_anything_else_is_not_a_screen() {
-        for screen in [Screen::Vault, Screen::Add, Screen::Help] {
+        for screen in [Screen::Vault, Screen::Help] {
             assert_eq!(Screen::parse(screen.code().unwrap()), Some(screen));
         }
         assert_eq!(Screen::parse("account"), None);
+        assert_eq!(Screen::parse("add"), None);
         assert_eq!(Screen::parse(""), None);
     }
 
@@ -86,6 +84,6 @@ mod tests {
         assert_eq!(Screen::Main.href(&[]), "/");
         assert_eq!(Screen::Main.href(&[("msg", "saved")]), "/?msg=saved");
         assert_eq!(Screen::Vault.href(&[("msg", "saved")]), "/?view=vault&msg=saved");
-        assert_eq!(Screen::Add.href_html(&[("lang", "en")]), "/?view=add&amp;lang=en");
+        assert_eq!(Screen::Help.href_html(&[("lang", "en")]), "/?view=help&amp;lang=en");
     }
 }

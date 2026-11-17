@@ -12,7 +12,7 @@ use crate::i18n::text;
 pub fn help(view: &View) -> String {
     let lang = view.lang;
     format!(
-        "<section class=\"tab\"><h2>{}</h2><p>{}</p><p>{}</p><p>{}</p><h2>{}</h2><ol><li>{}</li><li>{}</li><li>{}</li></ol>\
+        "<section class=\"card single\"><h2>{}</h2><p>{}</p><p>{}</p><p>{}</p><h2>{}</h2><ol><li>{}</li><li>{}</li><li>{}</li></ol>\
 <p class=\"note\">{} {}</p></section>",
         text(lang, "Ce que protège le remplissage"),
         text(

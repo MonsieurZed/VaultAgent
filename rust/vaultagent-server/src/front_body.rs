@@ -76,7 +76,7 @@ pub fn prepare(name: &str, form: &Form) -> Option<Prepared> {
         "pairing" => (
             "pairing",
             object(vec![("name", string(form.text("name")))]),
-            Screen::Add,
+            Screen::Main,
         ),
         "pair-decide" => (
             "pair-decide",

@@ -50,7 +50,7 @@ mod front_paris;
 mod front_pending;
 mod front_response;
 mod front_screen;
-mod front_vault_line;
+mod front_vault_block;
 mod front_view;
 mod guard;
 pub mod healthcheck;

@@ -13,7 +13,7 @@ use vaultagent_core::SeededEntropy;
 use vaultagent_core::devices::enroll;
 use vaultagent_server::Request;
 
-const VIEWS: [&str; 4] = ["", "vault", "add", "help"];
+const VIEWS: [&str; 3] = ["", "vault", "help"];
 const HOSTILE: &str = "<script>alert(1)</script>";
 
 /// Page rendue pour un écran (`""` : la page principale) et une langue.
@@ -41,7 +41,6 @@ fn each_page_shows_its_key_texts_in_the_three_languages() {
     let expected = [
         ["Appareils", "Devices", "Dispositivos"],
         ["Connecter votre coffre", "Connect your vault", "Conectar tu bóveda"],
-        ["Ajouter un appareil", "Add a device", "Añadir un dispositivo"],
         [
             "Ce que protège le remplissage",
             "What blind filling protects",
@@ -59,6 +58,18 @@ fn each_page_shows_its_key_texts_in_the_three_languages() {
     for (lang, text) in status {
         assert!(page(&service, "", lang).contains(text));
     }
+    let blocks = [("fr", "Coffre"), ("en", "Vault"), ("es", "Bóveda")];
+    for (lang, text) in blocks {
+        assert!(page(&service, "", lang).contains(&format!("<h2>{text}</h2>")));
+    }
+    let empty = [
+        ("fr", "Rien à valider"),
+        ("en", "Nothing to approve"),
+        ("es", "Nada que aprobar"),
+    ];
+    for (lang, text) in empty {
+        assert!(page(&Service::new(VaultState::Locked, Client::None), "", lang).contains(text));
+    }
 }
 
 #[test]
@@ -67,10 +78,12 @@ fn only_the_requested_page_is_rendered_and_an_old_tab_link_is_ignored() {
     let main = page(&service, "", "fr");
     assert!(main.contains("Client factice") && !main.contains("Connecter votre coffre"));
     let vault = page(&service, "vault", "fr");
-    assert!(vault.contains("Connecter votre coffre") && !vault.contains("Client factice"));
+    assert!(vault.contains("Connecter votre coffre") && vault.contains("Client factice"));
+    assert!(!vault.contains("Verrouillé</strong>") && !vault.contains("action=\"/admin/unlock\""));
     assert!(!vault.contains("Ce que protège le remplissage"));
-    let add = page(&service, "add", "fr");
-    assert!(add.contains("/downloads/linux-client.tar.gz") && !add.contains("Connecter votre coffre"));
+    assert!(main.contains("/downloads/linux-client.tar.gz"));
+    let removed = page(&service, "add", "fr");
+    assert!(removed.contains("Client factice") && !removed.contains("Connecter votre coffre"));
     for old in ["account", "clients", "about", "nope"] {
         let legacy = html(&service.send(&get(&format!("/?tab={old}&lang=xx"))));
         assert!(
@@ -170,7 +183,7 @@ fn times_are_server_rendered_in_paris_time_and_messages_are_translated_codes() {
 fn an_unconfigured_vault_shows_the_vault_form_on_the_root_page() {
     let service = Service::new(VaultState::Unconfigured, Client::None);
     let body = page(&service, "", "en");
-    assert!(body.contains("Setup required") && body.contains("disabled"));
+    assert!(body.contains("Setup required") && body.contains("class=\"blocks edit\""));
     assert!(body.contains("Connect your vault") && body.contains("action=\"/admin/configure\""));
-    assert!(!body.contains("Devices") && !body.contains("class=\"back\""));
+    assert!(!body.contains("action=\"/admin/unlock\"") && !body.contains("class=\"back\""));
 }

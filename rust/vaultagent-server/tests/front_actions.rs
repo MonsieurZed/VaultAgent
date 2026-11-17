@@ -145,11 +145,13 @@ fn unlock_and_lock_redirect_to_the_form_page() {
         (303, "/?view=help&msg=saved")
     );
     assert_eq!(state(&service)["unlocked"], true);
-    let closed = service.send(&form("lock", "view=add"));
-    assert_eq!(location(&closed), "/?view=add&msg=saved");
+    let closed = service.send(&form("lock", "view=vault"));
+    assert_eq!(location(&closed), "/?view=vault&msg=saved");
     assert_eq!(state(&service)["unlocked"], false);
     let fallback = service.send(&form("lock", "view=%3Cscript%3E"));
     assert_eq!(location(&fallback), "/?msg=saved");
+    let removed = service.send(&form("lock", "view=add"));
+    assert_eq!(location(&removed), "/?msg=saved");
 }
 
 #[test]
@@ -185,13 +187,10 @@ fn a_refused_pairing_redirects_with_a_code() {
     let service = Service::new(VaultState::Unconfigured, Client::None);
     assert_eq!(
         location(&service.send(&form("pairing", "name=Poste"))),
-        "/?view=add&msg=not-configured"
+        "/?msg=not-configured"
     );
     let blank = Service::new(VaultState::Locked, Client::None);
-    assert_eq!(
-        location(&blank.send(&form("pairing", "name="))),
-        "/?view=add&msg=invalid-input"
-    );
+    assert_eq!(location(&blank.send(&form("pairing", "name="))), "/?msg=invalid-input");
 }
 
 #[test]

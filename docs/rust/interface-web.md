@@ -20,7 +20,7 @@ L'interface actuelle (2.4b) est rendue par `vaultagent-server/src/front_*.rs`, s
 
 ## Principes
 
-1. Tout tient dans une fenêtre de 1366 × 768 sans défilement ; au-delà, les listes sont paginées et rien ne s'empile.
+1. Tout tient dans une fenêtre de 1280 × 720 sans défilement (décision du 17/11/2026 : blocs plein écran 16/9) ; les listes sont paginées dans leur bloc.
 2. Une seule page principale, sans onglets (décision de Zed du 17/11/2026) ; ce qui attend Zed vient en premier.
 3. Un seul mot par notion, celui de Windows quand il existe.
 4. Une erreur dit ce qui s'est passé et quoi faire, en une phrase, sur la page.
@@ -29,30 +29,38 @@ L'interface actuelle (2.4b) est rendue par `vaultagent-server/src/front_*.rs`, s
 
 ## Mise en page
 
-Une grille sur toute la hauteur, sans pied de page (la version passe dans « Aide »). De haut en bas :
+Décision de Zed du 17/11/2026 : la page en colonne étroite de la phase 7 est remplacée par des **blocs plein écran
+16/9**. La page tient dans la fenêtre à partir de 1280 × 720, sans défilement, sans largeur maximale.
 
-1. **Barre d'état** (44 px) : nom, pastille d'état (« Verrouillé », « Déverrouillé jusqu'à 08:42 », « À configurer »),
-   bouton « Déverrouiller » (champ 2FA à côté) ou « Verrouiller », langue (liste courte), « Aide ».
-2. **Ligne du coffre** (32 px) : « zed@… sur coffre.lan.zed.cx · verrouillage après 15 min · Modifier ».
-3. **À valider**, affichée seulement si une demande attend : demandes de déverrouillage (appareil, heure, échéance,
-   2FA, « Déverrouiller », « Refuser ») et demandes d'ajout d'appareil (nom, code à comparer, rôle demandé,
-   « Ajouter », « Refuser »).
-4. **Appareils** : une ligne de 44 px par appareil, avec le nom, le rôle (« validateur » avec son mode UAC, carte ou
-   Hello, ou « agent »), la date d'ajout, la case « sans demander » pour un agent et « Retirer » avec
-   confirmation. Le titre porte « Ajouter un appareil ». La liste montre 8 appareils, moins quand des demandes
-   attendent ; au-delà, elle est paginée (`?page=`).
+**Barre** (40 px) : la marque VaultAgent (bouclier violet), le message de la dernière action en pastille (il ne pousse
+pas la grille), et à droite les langues, « Actualiser » et « Aide ». Elle ne porte ni l'état ni les boutons du coffre.
 
-Budget à 1366 × 768 (environ 650 px utiles) : 44 + 32 + jusqu'à 3 demandes (160) + 8 appareils (380).
+**Grille** sous la barre : 3 colonnes égales, 2 rangées (haute 45 %, basse 55 %), marge et écart de 12 px, qui remplit
+toute la fenêtre restante (`main{min-height:0;padding:12px}`, jamais de marge automatique, sinon la grille flotte au
+milieu).
 
-## Pages secondaires
-
-| Page | Contenu | Remplace |
+| Bloc | Place | Contenu |
 |---|---|---|
-| `/?view=vault` | Adresse, e-mail, mot de passe maître, 2FA, verrouillage automatique et délai, « Vérifier et enregistrer », avec l'avertissement « changer de compte retire tous les appareils » à côté du bouton. Saisie une fois, ouverte par « Modifier » ; c'est aussi la page d'arrivée tant que le coffre est « À configurer ». | onglet « Compte » |
-| `/?view=add` | Nom de l'appareil, création du code d'ajout, liens de téléchargement des programmes Windows et Linux. | création de code et guide de « Clients » |
-| `/?view=help` | Ce que protège le remplissage, comment ajouter un appareil, version du serveur. | « Fonctionnement », pied de page |
+| **Coffre** (`b-vault`) | colonne 1, rangée haute | État en grand (« Verrouillé » orange, « Déverrouillé jusqu'à 09:15 » vert, « À configurer »), champ 2FA et « Déverrouiller » (bouton plein) ou « Verrouiller », en bas le résumé « e-mail sur hôte · verrouillage après N min » et « Modifier ». |
+| **À valider** (`b-pending`) | colonnes 2-3, rangée haute | Demandes de déverrouillage et d'ajout, compteur en pastille dans le titre. Vide : « Rien à valider » et « La page se met à jour seule. », centrés. |
+| **Appareils** (`b-devices`) | colonnes 1-2, rangée basse | Une ligne par appareil (rôle, date d'ajout, « Sans demander » pour un agent, « Retirer » avec confirmation sur la ligne), compteur dans le titre, 6 lignes par page puis pagination dans le bloc (`?page=`). |
+| **Ajouter un appareil** (`b-add`) | colonne 3, rangée basse | Nom de l'appareil et « Créer un code d'ajout » dans le bloc ; en bas, les téléchargements Windows et Linux avec leur SHA256. |
 
-Chaque page secondaire tient aussi sans défilement et porte un lien « Retour ».
+**Mode « Modifier »** (`/?view=vault`) : le formulaire du coffre prend la place du contenu du bloc Coffre, qui s'étend
+sur les deux rangées de la colonne 1 (classe `blocks edit`) ; « Appareils » passe en colonne 2 seule de la rangée
+basse, les autres blocs restent visibles. « Annuler » revient à `/`. Tant que le coffre n'est pas configuré, la page
+principale s'ouvre d'office dans ce mode, sans « Annuler » ; le bloc affiche alors la pastille « À configurer ».
+
+**Aide** (`/?view=help`) : page à part, un seul bloc large, lien « Retour » dans la barre. La page du code d'ajout,
+servie directement après « Créer un code d'ajout », reste aussi une page à part avec « Retour ». `/?view=add` n'existe
+plus : une valeur inconnue de `view` rend la page principale.
+
+**Style** : fond de page légèrement teinté, blocs sur fond de carte (bordure fine, coins de 12 px), police de 14 px,
+variables de couleur sur `:root` pour les thèmes clair et sombre (`prefers-color-scheme`). Un seul bouton plein (couleur
+d'accent) par bloc, les autres en contour ; « Retirer » et « Confirmer le retrait » en rouge. Couleurs d'état : vert
+(déverrouillé), orange (verrouillé), rouge (danger). Feuille de moins de 8 Ko.
+
+**Responsive** : sous 1000 px de large, les blocs passent en une seule colonne et la page défile.
 
 Le mode de validation (carte, UAC) reste réglé depuis l'icône de barre de TowerZ, car il demande une preuve UAC.
 L'interface web ne fait que l'afficher.
@@ -90,7 +98,8 @@ Les traductions (`i18n_*.rs`) suivent la même table ; une clé absente reste en
 
 La page principale se recharge toutes les 10 s seulement quand aucune demande n'attend, pour faire apparaître une
 nouvelle demande. Dès qu'une demande attend, elle ne se recharge plus, pour ne pas effacer une saisie ; « Actualiser »
-reste disponible dans la barre. Les pages secondaires ne se rechargent pas.
+reste disponible dans la barre. Elle ne se recharge pas non plus en mode « Modifier » (une saisie serait perdue), quand un message s'affiche ou quand
+une confirmation de retrait est ouverte, ni sur l'aide.
 
 ## Hors périmètre
 

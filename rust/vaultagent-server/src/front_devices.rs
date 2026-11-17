@@ -1,4 +1,4 @@
-//! Section « Appareils » : une ligne par appareil, avec son rôle, sa date d'ajout, « Sans demander » pour un agent et
+//! Bloc « Appareils » : une ligne par appareil, avec son rôle, sa date d'ajout, « Sans demander » pour un agent et
 //! « Retirer » avec confirmation sur la ligne, et pagination.
 
 use vaultagent_core::PublicDevice;
@@ -6,9 +6,8 @@ use vaultagent_core::PublicDevice;
 use crate::device_kind::DeviceKind;
 use crate::front_dates::date_of;
 use crate::front_escape::escape;
-use crate::front_html::{View, form_open, hidden};
+use crate::front_html::{View, block_title, form_open, hidden};
 use crate::front_paging::Paging;
-use crate::front_pending::request_rows;
 use crate::front_screen::Screen;
 use crate::i18n::text;
 
@@ -93,7 +92,7 @@ fn row(view: &View, device: &PublicDevice, paging: &Paging) -> String {
         auto_form(view, device)
     };
     format!(
-        "<div class=\"device\"><div><strong>{}</strong> <small>{}</small><small>{} {}</small></div>{auto}<a class=\"button quiet\" href=\"{}\">{}</a></div>",
+        "<div class=\"device\"><div><strong>{}</strong> <small>{}</small><small>{} {}</small></div>{auto}<a class=\"button quiet danger\" href=\"{}\">{}</a></div>",
         escape(&device.name),
         role(view, kind),
         text(view.lang, "ajouté le"),
@@ -133,17 +132,17 @@ fn pager(view: &View, paging: &Paging) -> String {
     )
 }
 
-/// Section « Appareils » avec le lien « Ajouter un appareil » dans son titre.
+/// Bloc « Appareils » avec son compteur et sa pagination.
 ///
 /// Paramètres : le contexte de rendu.
-/// Retour : le HTML de la section.
+/// Retour : le HTML du bloc.
 #[must_use]
 pub fn devices(view: &View) -> String {
     let lang = view.lang;
     let all = &view.state.devices;
-    let paging = Paging::new(all.len(), request_rows(view), view.page.as_deref());
+    let paging = Paging::new(all.len(), view.page.as_deref());
     let rows = if all.is_empty() {
-        format!("<p>{}</p>", text(lang, "Aucun appareil."))
+        format!("<p class=\"empty\">{}</p>", text(lang, "Aucun appareil."))
     } else {
         all[paging.range(all.len())]
             .iter()
@@ -152,10 +151,8 @@ pub fn devices(view: &View) -> String {
             .concat()
     };
     format!(
-        "<section class=\"devices\"><h2>{} <a class=\"add\" href=\"{}\">{}</a></h2>{rows}{}</section>",
-        text(lang, "Appareils"),
-        Screen::Add.href_html(&[]),
-        text(lang, "Ajouter un appareil"),
+        "<section class=\"card b-devices\">{}<div class=\"devices\">{rows}</div>{}</section>",
+        block_title(&text(lang, "Appareils"), Some(all.len())),
         pager(view, &paging),
     )
 }

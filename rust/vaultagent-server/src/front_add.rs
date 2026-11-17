@@ -1,6 +1,6 @@
-//! Page « Ajouter un appareil » : nom de l'appareil, création du code d'ajout et téléchargement des programmes.
+//! Bloc « Ajouter un appareil » : nom de l'appareil, création du code d'ajout et liens de téléchargement.
 
-use crate::front_html::{View, form_open};
+use crate::front_html::{View, block_title, form_open};
 use crate::i18n::text;
 
 /// Liens de téléchargement Windows et Linux, chacun avec sa somme SHA256.
@@ -14,26 +14,26 @@ fn downloads(view: &View) -> String {
     )
 }
 
-/// Contenu de la page « Ajouter un appareil ».
+/// Bloc « Ajouter un appareil » de la page principale.
 ///
 /// Paramètres : le contexte de rendu.
-/// Retour : le HTML de la section.
+/// Retour : le HTML du bloc.
 #[must_use]
 pub fn add(view: &View) -> String {
     let lang = view.lang;
     format!(
-        "<section class=\"tab\"><div class=\"section-title\"><h2>{}</h2><p>{}</p></div><h3>{}</h3>{}{}<label><span>{}</span>\
+        "<section class=\"card b-add\">{}<p>{}</p>{}<label><span>{}</span>\
 <input name=\"name\" maxlength=\"80\" required placeholder=\"PC personnel / Agent Linux\" value=\"\"></label>\
-<button type=\"submit\">{}</button></form></section>",
-        text(lang, "Ajouter un appareil"),
+<button type=\"submit\">{}</button></form><h3>{}</h3>{}</section>",
+        block_title(&text(lang, "Ajouter un appareil"), None),
         text(
             lang,
             "Installez le programme sur l’appareil utilisé par l’agent, puis créez un code et saisissez-le dans ce programme."
         ),
-        text(lang, "Télécharger le programme"),
-        downloads(view),
         form_open("pairing", "pair"),
         text(lang, "Nom de l’appareil"),
         text(lang, "Créer un code d’ajout"),
+        text(lang, "Télécharger le programme"),
+        downloads(view),
     )
 }

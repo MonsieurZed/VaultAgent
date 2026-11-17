@@ -91,10 +91,10 @@ mod tests {
 
     #[test]
     fn a_redirect_carries_only_codes() {
-        let response = redirect(Screen::Add, Notice::Expired);
+        let response = redirect(Screen::Vault, Notice::Expired);
         assert_eq!(
             (response.status, response.header("location")),
-            (303, Some("/?view=add&msg=expired"))
+            (303, Some("/?view=vault&msg=expired"))
         );
     }
 

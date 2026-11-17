@@ -250,19 +250,22 @@ Aucune dépendance nouvelle ni variable d'environnement (`VAULTAGENT_WEB` est su
 binaire par `include_str!`, `assets/style.css`). Le front de `linux/web/` n'est plus servi : `/app.js` et `/index.html` rendent `404`.
 
 - **`GET /`** : page complète rendue depuis l'état du coffre `default` (même donnée que `GET /api/admin/state`), pour le
-  propriétaire Authentik derrière le proxy de confiance. Tâche 7.3 : une page principale sans onglets (barre d'état avec pastille
-  « Verrouillé » / « Déverrouillé jusqu'à HH:MM » / « À configurer », « Déverrouiller » avec champ 2FA ou « Verrouiller », langue,
-  « Aide » ; ligne du coffre « <e-mail> sur <hôte> · verrouillage après N min · Modifier » ; section « À valider » seulement si une
-  demande de déverrouillage ou d'ajout attend ; « Appareils » avec rôle « validateur · UAC | Hello | carte » ou « agent », « Sans
-  demander » pour un agent seulement, date « ajouté le JJ/MM », « Retirer »). Tâche 7.4 : grille sur `100vh` sans défilement
-  à 1366 × 768 (`style.css`, 5 Ko, thème sombre par `prefers-color-scheme`) ; appareils paginés par `?page=N` (8 par page, moins quand
-  des demandes attendent, minimum 3 ; page invalide ou hors plage bornée, jamais d'erreur ; liens « ‹ Précédent » / « N / M » / « Suivant › »
-  seulement s'il y a plusieurs pages ; une redirection après action revient à la page 1) ; « Retirer » est un lien `?confirm=<id>` (GET,
-  aucune action) qui ouvre sur la ligne « Il ne pourra plus rien remplir. », « Confirmer le retrait » (POST `revoke`, contrôle d'origine)
-  et « Annuler » (un `confirm` inconnu est ignoré) ; rafraîchissement de 10 s seulement sur une page principale sans demande, sans
-  message et sans confirmation ouverte. Pages secondaires `?view=vault` (formulaire du coffre, aussi rendu par `/` tant
-  que rien n'est configuré), `?view=add` (nom, code d'ajout, téléchargements avec SHA256) et `?view=help`, chacune avec un lien
-  « Retour ». Un ancien `?tab=` est ignoré ; un `?view=` inconnu rend la page principale.
+  propriétaire Authentik derrière le proxy de confiance. Phase 7 (mise en page validée par Zed le 17/11/2026, blocs plein écran
+  16/9, `docs/rust/interface-web.md`) : une barre de 40 px (marque, message de la dernière action, langues, « Actualiser », « Aide »)
+  et une grille de 4 blocs sur toute la fenêtre, sans défilement dès 1280 × 720 (3 colonnes égales, rangées 45 % / 55 %) :
+  « Coffre » (colonne 1, rangée haute : état en grand vert / orange, champ 2FA avec « Déverrouiller » ou « Verrouiller », résumé
+  « <e-mail> sur <hôte> · verrouillage après N min · Modifier »), « À valider » (colonnes 2-3, rangée haute : demandes de
+  déverrouillage et d'ajout avec compteur, ou « Rien à valider »), « Appareils » (colonnes 1-2, rangée basse : rôle
+  « validateur · UAC | Hello | carte » ou « agent », « Sans demander » pour un agent seulement, date « ajouté le JJ/MM », « Retirer »,
+  compteur, 6 par page avec pagination `?page=N` dans le bloc ; page invalide ou hors plage bornée, jamais d'erreur) et
+  « Ajouter un appareil » (colonne 3, rangée basse : nom, « Créer un code d'ajout », téléchargements avec SHA256). « Retirer » est
+  un lien `?confirm=<id>` (GET, aucune action) qui ouvre sur la ligne « Il ne pourra plus rien remplir. », « Confirmer le retrait »
+  (POST `revoke`, contrôle d'origine) et « Annuler » (un `confirm` inconnu est ignoré). `?view=vault` (« Modifier ») remplace le
+  contenu du bloc Coffre par le formulaire du compte, étendu sur les deux rangées (`div.blocks.edit`), avec « Annuler » ; `/` l'ouvre
+  d'office tant que rien n'est configuré. `?view=help` est une page à part (un bloc large, « Retour ») ; `?view=add` n'existe plus.
+  Rafraîchissement de 10 s seulement sur la page principale sans demande, sans message, sans confirmation ouverte et hors mode
+  « Modifier ». Sous 1000 px de large, les blocs passent en une colonne et la page défile. Un ancien `?tab=` est ignoré ; un `?view=`
+  inconnu rend la page principale.
   Messages : `?msg=saved|refused|login-refused|duplicate-account|expired`, des codes traduits au rendu.
 - **Langue** : `?lang=fr|en|es` pose le cookie `vaultagent-language` (`Path=/; SameSite=Strict; HttpOnly; Secure`) ; français par défaut.
 - **Sécurité** : aucun `<script>` ni attribut `on*` ; `Content-Security-Policy: default-src 'none'; style-src 'self'; img-src 'self';
@@ -271,9 +274,9 @@ binaire par `include_str!`, `assets/style.css`). Le front de `linux/web/` n'est 
 - **Actions** : formulaires `POST /admin/<configure|unlock|lock|pairing|pair-decide|decide-unlock|auto-unlock|revoke>` en
   `application/x-www-form-urlencoded`. Le propriétaire est contrôlé par `route`, l'en-tête `origin` doit valoir `VAULTAGENT_ORIGIN`
   (sinon `403 origin-refused`), puis `admin::act` (la même fonction que la route JSON) est appelée et la réponse est un `303` vers
-  `/?msg=<code>` (page principale) ou `/?view=vault|add|help&msg=<code>` (`configure` vers `vault`, `pairing` en échec vers `add`, `unlock`, `lock` et `decide-unlock` vers le champ caché `view` du formulaire s'il existe) ; les erreurs de `front_error` vont vers `/?msg=<code>`. `pairing` répond directement une page `200` `no-store` (code dans un `<details>`) : le code n'entre dans aucune URL.
+  `/?msg=<code>` (page principale) ou `/?view=vault|help&msg=<code>` (`configure` vers `vault`, `unlock`, `lock` et `decide-unlock` vers le champ caché `view` du formulaire s'il existe ; `pairing` en échec revient à la page principale) ; les erreurs de `front_error` vont vers `/?msg=<code>`. `pairing` répond directement une page `200` `no-store` (code dans un `<details>`) : le code n'entre dans aucune URL.
 - **Rafraîchissement** : `<meta http-equiv="refresh" content="10">` sur la page principale seulement, quand aucune demande n'attend et
-  qu'aucun message n'est affiché ; jamais sur les pages secondaires ni sur le formulaire du coffre (une saisie serait perdue). Lien « Actualiser » dans la barre.
+  qu'aucun message n'est affiché ; jamais sur l'aide ni en mode « Modifier » (une saisie serait perdue). Lien « Actualiser » dans la barre.
 - **Rôle des appareils** : `device_kind` lit l'enregistrement (clé de validateur, clé d'élévation, justificatif Hello) ; `State.device_kinds` ne
   sort pas dans le JSON de `GET /api/admin/state` (`#[serde(skip)]`).
 - **Vocabulaire** : appareil, ajout d'appareil, validateur, Déverrouiller, Sans demander, Retirer (table de `docs/rust/interface-web.md`).
@@ -282,16 +285,16 @@ binaire par `include_str!`, `assets/style.css`). Le front de `linux/web/` n'est 
 
 | Module (2.4b) | Rôle |
 |---|---|
-| `front_page`, `front_view`, `front_screen` | `GET /` : choix de langue, d'écran (`Screen` : principale, `vault`, `add`, `help`) et de message, puis assemblage de la page (rafraîchissement). |
-| `front_bar`, `front_vault_line`, `front_pending`, `front_devices`, `device_kind` | Organismes de la page principale : barre d'état (et barre « Retour » des pages secondaires), ligne du coffre et message, « À valider », « Appareils » et rôle des appareils. |
-| `front_account`, `front_add`, `front_help` | Pages secondaires : formulaire du coffre, ajout d'un appareil, aide. |
+| `front_page`, `front_view`, `front_screen` | `GET /` : choix de langue, d'écran (`Screen` : principale, `vault`, `help`) et de message, puis assemblage de la page (rafraîchissement). |
+| `front_bar`, `front_vault_block`, `front_pending`, `front_devices`, `front_add`, `device_kind` | Organismes de la page principale : barre (et barre « Retour » de l'aide, message de l'action), blocs « Coffre », « À valider », « Appareils », « Ajouter un appareil » et rôle des appareils. |
+| `front_account`, `front_help` | Formulaire du coffre (mode « Modifier », dans le bloc Coffre) et aide. |
 | `front_html`, `front_escape` | `View` (contexte de rendu), champs cachés, balise de formulaire ; `escape` (cinq caractères). |
 | `front_action`, `front_body`, `form` | `POST /admin/*` : contrôles, `Form::parse` (analyseur `x-www-form-urlencoded`, std seulement), corps JSON de l'action, redirection. |
 | `front_error`, `i18n_errors` | Tâche 7.2 : erreur d'un formulaire `POST /admin/*` du navigateur (type de formulaire ou `Sec-Fetch-Mode: navigate`) = redirection `303` avec un code de message, sans action (`origin-refused`, `request-size`, `request-refused`, `route-refused` compris ; `proxy-required`, `owner-required`, `unauthorized` restent en JSON) ; erreur d'une page `GET` du navigateur (`Sec-Fetch-Mode: navigate` ou `Accept: text/html`) = page HTML d'une phrase avec lien « Retour » et en-têtes de sécurité. Les routes `/api/admin/*` et les requêtes sans ces en-têtes gardent le JSON du protocole. `Notice::from_error` est la table code d'erreur → message (code inconnu : « Action refusée par le serveur. »). |
 | `front_pairing`, `front_response`, `front_notice`, `front_lang`, `front_dates`, `front_paris`, `front_paging` | Page du code ; réponses (CSP, redirection 303, `style.css`) ; messages ; langue et cookie ; dates en heure de Paris (`front_paris` : décalage, calendrier) ; pagination des appareils. |
-| `i18n`, `i18n_layout`, `i18n_account`, `i18n_devices`, `i18n_help`, `i18n_errors` | Tables fr/en/es indexées par le texte français (80 entrées après la tâche 7.3) ; un texte absent reste en français. |
+| `i18n`, `i18n_layout`, `i18n_account`, `i18n_devices`, `i18n_help`, `i18n_errors` | Tables fr/en/es indexées par le texte français (89 entrées après la refonte en blocs) ; un texte absent reste en français. |
 
-Tests 2.4b, 7.3 et 7.4 (`front_paging` : pagination, confirmation du retrait, heure de Paris, feuille de style) : `front_pages` (pages en trois langues, ancien `?tab=` ignoré, échappement, champs vides, aucun script, cookie), `front_layout` (barre, ligne du coffre, « À valider », rôles et modes, pages secondaires et « Retour », rafraîchissement, vocabulaire), `front_actions`
+Tests 2.4b, 7.3 et 7.4 (`front_paging` : pagination, confirmation du retrait, heure de Paris, feuille de style) : `front_pages` (pages en trois langues, ancien `?tab=` ignoré, échappement, champs vides, aucun script, cookie), `front_layout` (barre, 4 blocs et leurs classes de placement, états vert / orange, « À valider » et son état vide, rôles et modes, mode « Modifier », aide et « Retour », feuille de style en grille, rafraîchissement, vocabulaire), `front_actions`
 (origine, propriétaire, corps, chaque action, page du code), tests unitaires de chaque module, `transport` (`GET /` sur socket réel).
 Le cas doré `front-index` décrit la nouvelle page (CSP sans script) ; les 48 autres sont inchangés.
 

@@ -18,7 +18,7 @@ pub fn pairing_page(lang: Lang, code: &str, expires_ms: u64) -> Response {
         "<!doctype html>\n<html lang=\"{}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" \
 content=\"width=device-width,initial-scale=1\"><title>VaultAgent</title><link rel=\"stylesheet\" href=\"/style.css\"></head>\n\
 <body><header class=\"bar\"><a class=\"brand\" href=\"/\"><span class=\"shield\">◆</span> VaultAgent</a></header>\n\
-<main><section class=\"tab pairing\"><h2>{}</h2><p>{}</p><details><summary>{}</summary><code class=\"pair-code\">{}</code>\
+<main><section class=\"card single pairing\"><h2>{}</h2><p>{}</p><details><summary>{}</summary><code class=\"pair-code\">{}</code>\
 </details><p class=\"note\">{} {}</p><p><a href=\"/\">{}</a></p></section></main></body></html>\n",
         lang.code(),
         text(lang, "Code d’ajout"),

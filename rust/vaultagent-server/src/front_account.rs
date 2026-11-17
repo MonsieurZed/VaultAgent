@@ -1,7 +1,9 @@
-//! Page « Coffre » (`?view=vault`) : formulaire de connexion au coffre ; les champs secrets sont toujours rendus vides.
+//! Mode « Modifier » (`?view=vault`) : le formulaire de connexion au coffre remplace le contenu du bloc Coffre ; les
+//! champs secrets sont toujours rendus vides.
 
 use crate::front_escape::escape;
 use crate::front_html::{View, form_open};
+use crate::front_vault_block::state_of;
 use crate::i18n::text;
 
 const DEFAULT_MINUTES: u32 = 15;
@@ -15,10 +17,22 @@ fn field(view: &View, label: &'static str, help: &'static str, input: &str) -> S
     )
 }
 
-/// Contenu de la page « Coffre ».
+/// Lien « Annuler » vers la page principale, absent tant que le coffre n'est pas configuré.
+fn cancel(view: &View) -> String {
+    if view.state.session.configured {
+        format!(
+            "<a class=\"button quiet\" href=\"/\">{}</a>",
+            text(view.lang, "Annuler")
+        )
+    } else {
+        String::new()
+    }
+}
+
+/// Bloc « Coffre » en mode « Modifier ».
 ///
 /// Paramètres : le contexte de rendu.
-/// Retour : le HTML de la section.
+/// Retour : le HTML du bloc.
 #[must_use]
 pub fn account(view: &View) -> String {
     let lang = view.lang;
@@ -65,11 +79,14 @@ pub fn account(view: &View) -> String {
     ]
     .concat();
     let checked = if automatic { " checked" } else { "" };
+    let (state_class, state_label) = state_of(view);
     format!(
-        "<section class=\"tab\"><div class=\"section-title\"><h2>{}</h2><p>{}</p></div>{}<div class=\"grid\">{fields}</div>\
+        "<section class=\"card b-vault\"><h2>{} <span class=\"chip {state_class}\">{state_label}</span></h2><p>{}</p>{}\
+<div class=\"grid\">{fields}</div>\
 <fieldset><legend>{}</legend><label class=\"check\"><input name=\"automatic\" type=\"checkbox\" value=\"on\"{checked}>\
 <span>{}</span></label><label class=\"timeout\"><span>{}</span><input name=\"minutes\" type=\"number\" min=\"1\" max=\"1440\" \
-value=\"{minutes}\"></label><p>{}</p></fieldset><div class=\"submit-row\"><button type=\"submit\">{}</button><p class=\"note\">{}</p></div></form></section>",
+value=\"{minutes}\"></label><p>{}</p></fieldset><div class=\"submit-row\"><button type=\"submit\">{}</button>{}\
+<p class=\"note\">{}</p></div></form></section>",
         text(lang, "Connecter votre coffre"),
         text(
             lang,
@@ -84,6 +101,7 @@ value=\"{minutes}\"></label><p>{}</p></fieldset><div class=\"submit-row\"><butto
             "Chaque utilisation autorisée prolonge le délai. Le redémarrage du serveur verrouille toujours le coffre."
         ),
         text(lang, "Vérifier et enregistrer"),
+        cancel(view),
         text(lang, "Changer de compte retire tous les appareils."),
     )
 }

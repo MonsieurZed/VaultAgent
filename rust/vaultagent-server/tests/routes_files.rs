@@ -73,7 +73,12 @@ fn the_style_sheet_carries_its_type_and_the_script_free_policy() {
     assert_eq!(response.header("referrer-policy"), Some("same-origin"));
     let policy = response.header("content-security-policy").unwrap();
     assert!(policy.contains("frame-ancestors 'none'") && !policy.contains("script-src"));
-    assert!(String::from_utf8(response.body).unwrap().contains(".bar"));
+    let style = String::from_utf8(response.body).unwrap();
+    assert!(style.contains(".bar"));
+    assert!(
+        style.contains("main{min-height:0;padding:12px}"),
+        "main must stay at the top of its grid row"
+    );
 }
 
 #[test]

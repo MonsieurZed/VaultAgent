@@ -1,4 +1,4 @@
-//! Pagination des appareils, confirmation du retrait, heure de Paris et feuille de style sans défilement.
+//! Pagination des appareils (6 par page, dans le bloc), confirmation du retrait, heure de Paris et feuille de style.
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
@@ -55,29 +55,29 @@ fn shown(body: &str) -> usize {
 }
 
 #[test]
-fn eight_devices_fit_on_one_page_without_pager() {
-    let (service, _) = with_devices(8);
+fn six_devices_fit_on_one_page_without_pager() {
+    let (service, _) = with_devices(6);
     let body = page(&service, "/");
-    assert_eq!(shown(&body), 8);
-    assert!(!body.contains("class=\"pager\""));
+    assert_eq!(shown(&body), 6);
+    assert!(!body.contains("class=\"pager\"") && body.contains("<span class=\"count\">6</span>"));
 }
 
 #[test]
-fn nine_devices_are_paginated_with_links_both_ways() {
-    let (service, _) = with_devices(9);
+fn seven_devices_are_paginated_with_links_both_ways() {
+    let (service, _) = with_devices(7);
     let first = page(&service, "/");
-    assert_eq!(shown(&first), 8);
+    assert_eq!(shown(&first), 6);
     assert!(first.contains("<span>1 / 2</span>") && first.contains("href=\"/?page=2\">Suivant ›"));
     assert!(!first.contains("Précédent"));
     let second = page(&service, "/?page=2");
     assert_eq!(shown(&second), 1);
-    assert!(second.contains("Poste 09") && second.contains("<span>2 / 2</span>"));
+    assert!(second.contains("Poste 07") && second.contains("<span>2 / 2</span>"));
     assert!(second.contains("href=\"/\">‹ Précédent") && !second.contains("Suivant ›"));
 }
 
 #[test]
 fn an_invalid_or_out_of_range_page_is_clamped() {
-    let (service, _) = with_devices(9);
+    let (service, _) = with_devices(7);
     for (query, label) in [
         ("0", "1 / 2"),
         ("abc", "1 / 2"),
@@ -92,17 +92,13 @@ fn an_invalid_or_out_of_range_page_is_clamped() {
 }
 
 #[test]
-fn waiting_requests_shrink_the_page_down_to_three() {
+fn waiting_requests_no_longer_shrink_the_device_page() {
     let (service, _) = with_devices(10);
     pair_requests(&service, 2);
     let body = page(&service, "/");
     assert_eq!(body.matches("Poste ").count(), 6);
     assert!(body.contains("<span>1 / 2</span>"));
-    let (busy, _) = with_devices(10);
-    pair_requests(&busy, 7);
-    let body = page(&busy, "/");
-    assert_eq!(body.matches("Poste ").count(), 3);
-    assert!(body.contains("<span>1 / 4</span>"));
+    assert!(body.contains("<h2>À valider <span class=\"count\">2</span></h2>"));
 }
 
 #[test]
@@ -151,8 +147,8 @@ fn dates_are_shown_in_paris_time_without_a_zone() {
 #[test]
 fn the_stylesheet_fills_the_window_and_supports_the_dark_theme() {
     let css = include_str!("../assets/style.css");
-    assert!(css.contains("height:100vh") && css.contains("grid-template-rows:44px"));
+    assert!(css.contains("height:100vh") && css.contains("grid-template-rows:40px"));
     assert!(css.contains("@media(prefers-color-scheme:dark)"));
-    assert!(css.contains("height:44px") && css.contains("font:14px/1.3"));
+    assert!(css.contains("height:40px") && css.contains("font:14px/1.3"));
     assert!(css.len() < 8_000);
 }

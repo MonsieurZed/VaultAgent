@@ -1,4 +1,5 @@
-//! Assemblage de la page complète : page principale ou page secondaire, sans aucun script.
+//! Assemblage de la page complète : les quatre blocs de la page principale, le mode « Modifier » ou l'aide, sans
+//! aucun script.
 
 use crate::front_account::account;
 use crate::front_add::add;
@@ -8,7 +9,7 @@ use crate::front_help::help;
 use crate::front_html::View;
 use crate::front_pending::{has_pending, pending};
 use crate::front_screen::Screen;
-use crate::front_vault_line::{line, message};
+use crate::front_vault_block::vault_block;
 
 const REFRESH_SECONDS: u32 = 10;
 
@@ -21,16 +22,23 @@ fn refreshes(view: &View) -> bool {
 /// Barre et contenu de la page selon l'écran.
 fn parts(view: &View) -> (String, String) {
     match view.screen {
-        Screen::Main => (
-            status_bar(view),
-            format!("{}{}{}", line(view), pending(view), devices(view)),
-        ),
-        Screen::Vault if !view.state.session.configured => {
-            (status_bar(view), format!("{}{}", message(view), account(view)))
+        Screen::Main | Screen::Vault => {
+            let (class, first) = if view.screen == Screen::Vault {
+                ("blocks edit", account(view))
+            } else {
+                ("blocks", vault_block(view))
+            };
+            (
+                status_bar(view),
+                format!(
+                    "<div class=\"{class}\">{first}{}{}{}</div>",
+                    pending(view),
+                    devices(view),
+                    add(view)
+                ),
+            )
         }
-        Screen::Vault => (back_bar(view), format!("{}{}", message(view), account(view))),
-        Screen::Add => (back_bar(view), format!("{}{}", message(view), add(view))),
-        Screen::Help => (back_bar(view), format!("{}{}", message(view), help(view))),
+        Screen::Help => (back_bar(view), help(view)),
     }
 }
 

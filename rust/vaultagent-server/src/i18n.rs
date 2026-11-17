@@ -66,6 +66,6 @@ mod tests {
             assert!(!french.is_empty() && !english.is_empty() && !spanish.is_empty());
             assert!(seen.insert(*french), "doublon : {french}");
         }
-        assert_eq!(seen.len(), 86);
+        assert_eq!(seen.len(), 89);
     }
 }

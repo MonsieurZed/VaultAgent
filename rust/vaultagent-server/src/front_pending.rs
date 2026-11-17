@@ -1,7 +1,7 @@
-//! Section « À valider » : demandes de déverrouillage et demandes d'ajout d'appareil ; absente quand rien n'attend.
+//! Bloc « À valider » : demandes de déverrouillage et demandes d'ajout d'appareil, ou état vide.
 
 use crate::front_escape::escape;
-use crate::front_html::{View, form_open, hidden};
+use crate::front_html::{View, block_title, form_open, hidden};
 use crate::i18n::text;
 
 /// Indique si au moins une demande attend une décision.
@@ -11,15 +11,6 @@ use crate::i18n::text;
 #[must_use]
 pub fn has_pending(view: &View) -> bool {
     !view.state.unlock_requests.is_empty() || !view.state.pair_requests.is_empty()
-}
-
-/// Nombre de lignes de demandes affichées.
-///
-/// Paramètres : le contexte de rendu.
-/// Retour : les demandes de déverrouillage plus les demandes d'ajout.
-#[must_use]
-pub fn request_rows(view: &View) -> usize {
-    view.state.unlock_requests.len() + view.state.pair_requests.len()
 }
 
 /// Lignes des demandes de déverrouillage : appareil, champ 2FA, « Déverrouiller » et « Refuser ».
@@ -75,18 +66,25 @@ value=\"false\" class=\"quiet\">{}</button></form></div>",
         .concat()
 }
 
-/// Section « À valider ».
+/// Bloc « À valider » : les demandes en attente, ou un état vide quand rien n'attend.
 ///
 /// Paramètres : le contexte de rendu.
-/// Retour : le HTML de la section, ou le texte vide si aucune demande n'attend.
+/// Retour : le HTML du bloc.
 #[must_use]
 pub fn pending(view: &View) -> String {
+    let lang = view.lang;
     if !has_pending(view) {
-        return String::new();
+        return format!(
+            "<section class=\"card b-pending\">{}<div class=\"empty\"><strong>{}</strong><p>{}</p></div></section>",
+            block_title(&text(lang, "À valider"), None),
+            text(lang, "Rien à valider"),
+            text(lang, "La page se met à jour seule."),
+        );
     }
+    let count = view.state.unlock_requests.len() + view.state.pair_requests.len();
     format!(
-        "<section class=\"request-panel\"><h2>{}</h2>{}{}</section>",
-        text(view.lang, "À valider"),
+        "<section class=\"card b-pending\">{}{}{}</section>",
+        block_title(&text(lang, "À valider"), Some(count)),
         unlock_rows(view),
         pair_rows(view),
     )
